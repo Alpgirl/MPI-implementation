@@ -10,6 +10,7 @@
 #define L_y  20.0
 #define T_1  1000.0
 #define T_2  300.0
+#define time 1000
 using namespace std;
 
 /*double calc_side (double *** T, int i, int j, double **alpha, int t, int h_x, int h_y, int tau) {
@@ -23,66 +24,27 @@ using namespace std;
     T[i][j][t+1] = tau * ((alpha[0][0] + alpha[0][1])/pow(h_x,2) + (alpha[1][0] + alpha[1][1])/pow(h_y,2)) + T[i][j][t];
     return T[i][j][t+1];
 }*/
-void initMat(double *T, float h_x, float h_y){
+void initMat(double *T, double h_x, double h_y){
     int i, j;
-    for(i = 0; i < M; i++)
-        for (j = 0; j < M; j++){
+    for(i = 0; i < N_x; i++)
+        for (j = 0; j < N_y; j++){
             if (h_x * i < h && h_y * j < h)
-                T[i * M + j] = T_1;
+                T[i * N_x * N_y + j] = T_1;
             else
-                T[i * M + j] = T_2;
+                T[i * N_x * N_y + j] = T_2;
         }
 }
-int main() {
-    int a = 1, i, j, time = 5000, t;
-    float ai, bi, ci, fi;
-    float h_x, h_y, tau, n;
-    double **alpha = new double * [2];
-    // for mpi implementation:
-    int size, rank;
+void solve(double *T, double *alpha, double tau, double h_x, double h_y, int rank, int size){
+    int i, j, t;
+    double *T_proc_full = new double[M];
+    for(i = 0; i < N_x; i++)
+        for (j = 0; j < N_y; j++)
+            T_proc_full[i * N_x * N_y + j] = T[i * N_x * N_y + j];
 
-    MPI_Init(NULL, NULL);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    double *T = new double[M * M];
-    double *T_proc = new double[M * M/size];
-
-    ofstream on("file_mpi.txt");
-    /*on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
-    "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point";*/
-
-    if(!on){
-        cout << "Error openning input file. \n";
-        return -1;
-    }
-
-    for (i = 0; i < 2; i++)
-        alpha[i] = new double [2];
-    /*for (i = 0; i < N_x; i++){
-        T[i] = new double *[N_y/size];*/
-       /* for (j = 0; j < N_y; j++){
-            T[i][j] = new double [time];
-        }
-    }*/
-
-    h_x = L_x/(N_x - 1);
-    h_y = L_y/(N_y - 1);
-    tau = 1/(pow(h_x,-2)+pow(h_y,-2))*0.5; // оптимальное время
-    // критерий устойчивости: tau <= h^2/(2*p), p - число мер
-    // см. Самарский, Гулин "Устойчивость разностных схем" стр. 314
-    initMat(T, h_x, h_y);
-
-    for(i = 0; i < M; i++) {
-        for (j = 0; j < M; j++){
-            on << T[i * M + j] << ' ';
-        }
-        on << endl;
-    }
-
-    /*for (t = 0; t < time - 1; t++){
-        for (i = 0; i < N_x; i++){
-            for (j = 0; j < N_y; j++) {
+    for (t = 0; t < time - 1; t++){
+        for (i = 0; i < M/size; i++){
+            MPI_Scatter(T_proc_full, M/size , MPI_DOUBLE , T_proc, M/size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            for (j = 0; j < M; j++) {
                 if (j > 0 && j < N_y-1 && i == 0) {
                     alpha[0][1] = 0;
                     alpha[0][0] = T[i+1][j][t] - T[i][j][t];
@@ -139,8 +101,51 @@ int main() {
                 }
                 T[i][j][t+1] = tau * ((alpha[0][0] + alpha[0][1])/pow(h_x,2) + (alpha[1][0] + alpha[1][1])/pow(h_y,2)) + T[i][j][t];
             }
+            MPI_Allgather(T_proc, M/size, MPI_DOUBLE, T_proc_full, M/size , MPI_DOUBLE, MPI_COMM_WORLD);
         }
+    }
+}
+int main() {
+    int a = 1, i, j, time = 5000, t;
+    float ai, bi, ci, fi;
+    double h_x, h_y, tau, n;
+    double **alpha = new double * [2];
+    // for mpi implementation:
+    int size, rank;
+
+    MPI_Init(NULL, NULL);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    double *T = new double[M];
+    double *T_proc = new double[M/size];
+
+    ofstream on("file_mpi.txt");
+    /*on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
+    "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point";*/
+
+    if(!on){
+        cout << "Error openning input file. \n";
+        return -1;
+    }
+
+    for (i = 0; i < 2; i++)
+        alpha[i] = new double [2];
+
+    h_x = L_x/(N_x - 1);
+    h_y = L_y/(N_y - 1);
+    tau = 1/(pow(h_x,-2)+pow(h_y,-2))*0.5; // оптимальное время
+    // критерий устойчивости: tau <= h^2/(2*p*a), p - число мер
+    // см. Самарский, Гулин "Устойчивость разностных схем" стр. 314
+    initMat(T, h_x, h_y);
+
+    /*for(i = 0; i < N_x; i++) {
+        for (j = 0; j < N_y; j++){
+            on << T[i * N_x * N_y + j] << ' ';
+        }
+        on << endl;
     }*/
+    solve(T, alpha, tau, h_x, h_y, rank, size);
     cout << "ok" << endl;
 
     /*for (j = 0; j < N_y; j++){
