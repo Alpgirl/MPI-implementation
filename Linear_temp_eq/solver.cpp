@@ -1,4 +1,3 @@
-//#include "solver.h"
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -17,13 +16,15 @@ using namespace std;
 }*/
 
 int main() {
-    int a = 1, i, j, N_x = 21, N_y = 21, time = 10, t;
-    float L_x = 10.0, L_y = 20.0, T_1 = 300.0, T_2 = 350.0, ai, bi, ci, fi;
+    int a = 1, i, j, N_x = 101, N_y = 101, time = 5000, t;
+    float L_x = 10.0, L_y = 20.0, T_1 = 1000.0, T_2 = 300.0, ai, bi, ci, fi;
     float h_x, h_y, tau, n, h = 5.0;
     double ***T = new double ** [(N_x)];
     double **alpha = new double * [2];
 
-    ofstream on("file.txt");
+    ofstream on("file.dat");
+    on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
+    "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point";
 
     if(!on){
         cout << "Error openning input file. \n";
@@ -41,7 +42,9 @@ int main() {
 
     h_x = L_x/(N_x - 1);
     h_y = L_y/(N_y - 1);
-    tau = time/100.0;
+    tau = 1/(pow(h_x,-2)+pow(h_y,-2))*0.5; // оптимальное время
+    // критерий устойчивости: tau <= h^2/(2*p), p - число мер
+    // см. Самарский, Гулин "Устойчивость разностных схем" стр. 314
 
     for(i = 0; i < N_x; i++)
         for (j = 0; j < N_y; j++){
@@ -64,7 +67,6 @@ int main() {
                 if (j > 0 && j < N_y-1 && i == 0) {
                     alpha[0][1] = 0;
                     alpha[0][0] = T[i+1][j][t] - T[i][j][t];
-                    //alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
                     alpha[1][0] = T[i][j+1][t] - T[i][j][t];
                     alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
                 }
@@ -72,12 +74,10 @@ int main() {
                     alpha[0][1] = 0;
                     alpha[1][0] = 0;
                     alpha[0][0] = T[i+1][j][t] - T[i][j][t];
-                    //alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
                     alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
                 }
                 else if (j > 0 && j < N_y-1 && i == N_x-1){
                     alpha[0][0] = 0;
-                    //alpha[0][0] = T[i+1][j][t] - T[i][j][t];
                     alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
                     alpha[1][0] = T[i][j+1][t] - T[i][j][t];
                     alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
@@ -87,36 +87,29 @@ int main() {
                     alpha[0][0] = T[i+1][j][t] - T[i][j][t];
                     alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
                     alpha[1][0] = T[i][j+1][t] - T[i][j][t];
-                    //alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
                 }
                 else if (i == N_x-1 && j == 0) {
                     alpha[0][0] = 0;
                     alpha[1][1] = 0;
                     alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
                     alpha[1][0] = T[i][j+1][t] - T[i][j][t];
-                    //alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
                 }
                 else if (i > 0 && i < N_x-1 && j == N_y-1) {
                     alpha[1][0] = 0;
                     alpha[0][0] = T[i+1][j][t] - T[i][j][t];
                     alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
-                    //alpha[1][0] = T[i][j+1][t] - T[i][j][t];
                     alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
                 }
                 else if (i == 0 && j == 0) {
                     alpha[0][1] = 0;
                     alpha[1][1] = 0;
                     alpha[0][0] = T[i+1][j][t] - T[i][j][t];
-                    //alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
                     alpha[1][0] = T[i][j+1][t] - T[i][j][t];
-                    //alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
                 }
                 else if (i == N_x-1 && j == N_y-1) {
                     alpha[0][0] = 0;
                     alpha[1][0] = 0;
-                    //alpha[0][0] = T[i+1][j][t] - T[i][j][t];
                     alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
-                    //alpha[1][0] = T[i][j+1][t] - T[i][j][t];
                     alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
                 }
                 else {
@@ -134,8 +127,7 @@ int main() {
     for (j = 0; j < N_y; j++){
         for(i = 0; i < N_x; i++){
             on << endl;
-            //on << T[i][j][10] << "   ";
-            on << i << " " << j << " " << T[i][j][1];
+            on << i << " " << j << " " << T[i][j][4500];
         }
         //on << endl;
     }
