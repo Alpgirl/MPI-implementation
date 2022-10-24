@@ -4,11 +4,11 @@
 #include <mpi.h>
 /*#define N_x  20
 #define N_y  20
-#define M  N_x * N_y
+#define M  N_x * N_y*/
 #define h  5.0
 #define L_x  10.0
 #define L_y  20.0
-#define T_1  1000.0
+/*#define T_1  1000.0
 #define T_2  300.0*/
 using namespace std;
 
@@ -23,6 +23,30 @@ using namespace std;
     T[i][j][t+1] = tau * ((alpha[0][0] + alpha[0][1])/pow(h_x,2) + (alpha[1][0] + alpha[1][1])/pow(h_y,2)) + T[i][j][t];
     return T[i][j][t+1];
 }*/
+void initValues(double **x0, int N_x_total, int N_y_total, double T_1, double T_2, double h_x, double h_y){
+    int i, j;
+    double T_temp;
+
+    for (i = 0; i < N_x_total; i++){
+        if (i <= h/h_x+1) T_temp = T_1;
+        else T_temp = T_2;
+        x0[i][0] = T_temp;
+        x0[i][N_y_total - 1] = T_2;
+    }
+    for (j = 0; j < N_y_total; j++){
+        if (j <= h/h_y+1) T_temp = T_1;
+        else T_temp = T_2;
+        x0[0][j] = T_temp;
+        x0[N_x_total - 1][j] = T_2;
+    }
+    for (i = 1; i < N_x_total - 1; i++){
+        for (j = 1; j < N_y_total - 1; j++){
+            if (i <= h/h_x+1 and j <= h/h_y+1) T_temp = T_1;
+            else T_temp = T_2;
+            x0[i][j] = T_temp;
+        }
+    }
+}
 void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int x_domains, int y_domains){
     int i, j;
     // computation of starting ys, ye on (Ox) standard axis for the first column of global domain
@@ -51,18 +75,8 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int 
         }
     }
 }
-void initMat(double *T, float h_x, float h_y){
-    int i, j;
-    for(i = 0; i < M; i++)
-        for (j = 0; j < M; j++){
-            if (h_x * i < h && h_y * j < h)
-                T[i * M + j] = T_1;
-            else
-                T[i * M + j] = T_2;
-        }
-}
 int main() {
-    int i, j, time = 20, t;
+    int i, j, time = 20;
     float ai, bi, ci, fi;
     //float h_x, h_y, tau, n;
     double **alpha = new double * [2];
@@ -71,7 +85,7 @@ int main() {
     int a = 1;
 
     // Various parameters for dimensions
-    int N_x = 100, N_y = 100, x_domains = 2, y_domains = 4;
+    int N_x = 18, N_y = 18, x_domains = 2, y_domains = 2;
     int N_x_global, N_y_global;
     int N_x_total, N_y_total;
 
@@ -141,6 +155,15 @@ int main() {
     N_x_total = N_x + 2 * x_domains + 2;
     N_y_total = N_y + 2 * y_domains + 2;
 
+    // Allocate 2D contiguous arrays x and x0 */
+    double **x0 = new double * [N_x_total];
+    double **x = new double * [N_x_total];
+
+    for (i = 0; i < N_x_total; i++){
+        x0[i] = new double[N_y_total];
+        x[i] = new double[N_y_total];
+    }
+
     // allocate coordinates of processes
     int *xs = new int[size];
     int *xe = new int[size];
@@ -159,7 +182,7 @@ int main() {
     dims[1] = x_domains;
 
     // makes a new communicator to which topology information has benn attached
-    MPI_Cart_create(comm, ndims, dims, periods, reorganisation, comm2d);
+    MPI_Cart_create(comm, ndims, dims, periods, reorganisation, &comm2d);
 
     // indentify neighBors; specify a "dummy" source or destination for communication
     neighBor[0] = MPI_PROC_NULL;
@@ -181,10 +204,13 @@ int main() {
     ProcessToMap(xs, ys, xe, ye, xcell, ycell, x_domains, y_domains);
 
     // create column data type to communicate with East and West neighBors; creates a vector datatype
-    MPI_Type_vector(xcell, 1, N_y_total, MPI_Double, &column_type);
+    MPI_Type_vector(xcell, 1, N_y_total, MPI_DOUBLE, &column_type);
     
     // commits the datatype
     MPI_Type_commit(&column_type);
+
+    // Initialize values
+    initValues(x0, N_x_total, N_y_total, T_1, T_2, h_x, h_y);
     /*double *T = new double[M * M];
     double *T_proc = new double[M * M/size];*/
 
@@ -200,18 +226,10 @@ int main() {
 
     for (i = 0; i < 2; i++)
         alpha[i] = new double [2];
-    /*for (i = 0; i < N_x; i++){
-        T[i] = new double *[N_y/size];*/
-       /* for (j = 0; j < N_y; j++){
-            T[i][j] = new double [time];
-        }
-    }*/
 
-    initMat(T, h_x, h_y);
-
-    for(i = 0; i < M; i++) {
-        for (j = 0; j < M; j++){
-            on << T[i * M + j] << ' ';
+    for(i = 0; i < N_x_total; i++) {
+        for (j = 0; j < N_y_total; j++){
+            on << x0[i][j] << ' ';
         }
         on << endl;
     }
@@ -287,9 +305,9 @@ int main() {
         //on << endl;
     //}
 
-    delete[] T;
+    delete[] x, x0;
     delete[] alpha;
 
-    //MPI_Finalize();
+    MPI_Finalize();
     return 0;
 }
