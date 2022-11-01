@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cmath>
 #include <mpi.h>
+#include "updateBound.h"
 /*#define N_x  20
 #define N_y  20
 #define M  N_x * N_y*/
@@ -138,7 +139,7 @@ int main() {
     // broadcast input parameters
     /*MPI_Bcast(iconf, 5, MPI_INT, 0, comm);
     MPI_Bcast(conf, 2, MPI_DOUBLE, 0, comm);*/
-    if ((rank == 0) or size != (x_domains * y_domains)) {
+    if ((size == 0) or size != (x_domains * y_domains)) {
         cout << "Number of processes not equal to Number of subdomains" << endl;
     }
 
@@ -158,6 +159,7 @@ int main() {
     // Allocate 2D contiguous arrays x and x0 */
     double **x0 = new double * [N_x_total];
     double **x = new double * [N_x_total];
+    double *xfinal = new double [N_x * N_y];
 
     for (i = 0; i < N_x_total; i++){
         x0[i] = new double[N_y_total];
@@ -190,8 +192,9 @@ int main() {
     neighBor[2] = MPI_PROC_NULL;
     neighBor[3] = MPI_PROC_NULL;
 
-    // left/west and right/east neighBors; returns the shifted source and destination ranks, guven a shft direction and amount
+    // left/west and right/east neighBors; returns the shifted source and destination ranks, given a shft direction and amount
     MPI_Cart_shift(comm2d, 0, 1, &neighBor[W], &neighBor[E]);
+   // MPI_Cart_shift( MPI_Comm comm , int direction , int disp , int* rank_source , int* rank_dest);
 
     // bottom/sourth and upper/north neighBors; -||-
     MPI_Cart_shift(comm2d, 1, 1, &neighBor[S], &neighBor[N]);
@@ -200,6 +203,7 @@ int main() {
     xcell = N_x/x_domains;
     ycell = N_y/y_domains;
 
+    double *xtemp = new double [xcell * ycell];
     // compute xs, ys, xe, ye for each cell on the grid
     ProcessToMap(xs, ys, xe, ye, xcell, ycell, x_domains, y_domains);
 
@@ -214,25 +218,57 @@ int main() {
     /*double *T = new double[M * M];
     double *T_proc = new double[M * M/size];*/
 
-
-    ofstream on("file_mpi.txt");
+    updateBound(x0, neighBor, comm2d, column_type, rank, xs, ys, xe, ye, ycell);
+    j=1;
+    for (i=xs[rank];i<=xe[rank];i++) {
+        for (int k=0;k<ycell;k++)
+            xtemp[(j-1)*ycell+k] = x0[i][ys[rank]+k];
+        j=j+1;
+   }
+    MPI_Gather(xtemp, xcell*ycell , MPI_DOUBLE , xfinal, xcell*ycell, MPI_DOUBLE, 0 , comm);
+    //cout << ys[rank] << " " << ye[rank] << endl;
+    //cout << xs[rank] << " " << xe[rank] << endl;
+    //cout << N_x << " " << N_x_total << " " << N_x_global << endl;
     /*on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
     "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point";*/
-
-    if(!on){
-        cout << "Error openning input file. \n";
-        return -1;
-    }
 
     for (i = 0; i < 2; i++)
         alpha[i] = new double [2];
 
-    for(i = 0; i < N_x_total; i++) {
+    /*for(i = 0; i < N_x_total; i++) {
         for (j = 0; j < N_y_total; j++){
             on << x0[i][j] << ' ';
         }
         on << endl;
+    }*/
+    if (rank == 0){
+        ofstream on("file_mpi.txt");
+
+        if(!on){
+            cout << "Error openning input file. \n";
+            return -1;
+        }
+
+        /*for (i=1;i<=N_x+1;i++)
+            on << T_1;
+        on << T_1 << endl;*/
+        for (i=1;i<=y_domains;i++){
+            for (j=0;j<ycell;j++) {
+                //on << T_1;
+                for (int k=1;k<=x_domains;k++) {
+                    for (int l=0;l<xcell;l++)
+                        on << xfinal[(i-1)*x_domains*xcell*ycell+(k-1)*xcell*ycell+l*ycell+j] << " ";
+                }
+                //on << T_1 << endl;
+                on << endl;
+            }
+        }
+        /*for (i=1;i<=N_x+1;i++)
+            on << T_1;
+        on << T_1 << endl;*/
+        on.close();
     }
+
 
     /*for (t = 0; t < time - 1; t++){
         for (i = 0; i < N_x; i++){
@@ -305,7 +341,7 @@ int main() {
         //on << endl;
     //}
 
-    delete[] x, x0;
+    delete[] x, x0, xtemp, xfinal, xs, ys, xe, ye;
     delete[] alpha;
 
     MPI_Finalize();
