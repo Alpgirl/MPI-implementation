@@ -219,12 +219,17 @@ int main() {
     double *T_proc = new double[M * M/size];*/
 
     updateBound(x0, neighBor, comm2d, column_type, rank, xs, ys, xe, ye, ycell);
-    j=1;
-    for (i=xs[rank];i<=xe[rank];i++) {
-        for (int k=0;k<ycell;k++)
-            xtemp[(j-1)*ycell+k] = x0[i][ys[rank]+k];
-        j=j+1;
-   }
+    /*if (true) {*/if (rank == 1){
+        j=1;
+        for (i=xs[rank];i<=xe[rank];i++) {
+            for (int k=0;k<ycell;k++){
+                xtemp[(j-1)*ycell+k] = x0[i][ys[rank]+k];  // ???
+                cout << xtemp[(j-1)*ycell+k] << " ";
+            }
+            cout << endl;    
+            j=j+1;
+        }
+    }
     MPI_Gather(xtemp, xcell*ycell , MPI_DOUBLE , xfinal, xcell*ycell, MPI_DOUBLE, 0 , comm);
     //cout << ys[rank] << " " << ye[rank] << endl;
     //cout << xs[rank] << " " << xe[rank] << endl;
