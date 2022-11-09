@@ -77,21 +77,27 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int 
     }
 }
 int main() {
-    int i, j, time = 20;
+    int i, j, time = 1000;
     float ai, bi, ci, fi;
     //float h_x, h_y, tau, n;
-    double **alpha = new double * [2];
+    //double **alpha = new double * [2];
 
     // diffusivity coefficient
-    int a = 1;
+    double a = 1.0;
+
+    // time variables
+    double time_init, time_final, elapsed_time;
 
     // Various parameters for dimensions
-    int N_x = 18, N_y = 18, x_domains = 2, y_domains = 2;
+    int N_x = 18, N_y = 18, x_domains = 2, y_domains = 3;
     int N_x_global, N_y_global;
     int N_x_total, N_y_total;
 
     // space and time steps
     double dt, dt1 = 0.1, tau, h_x, h_y;
+
+    // Current local square difference 
+    double localDiff;
 
     // current global difference and limit convergence
     double result, epsilon = 0.1;
@@ -219,7 +225,42 @@ int main() {
     double *T_proc = new double[M * M/size];*/
 
     updateBound(x0, neighBor, comm2d, column_type, rank, xs, ys, xe, ye, ycell);
-    /*if (true) {*/if (rank == 1){
+    /* Initialize step and time */
+    step = 0;
+    t = 0.0;
+
+    /* Starting time */
+    time_init = MPI_Wtime();
+
+    for (t = 0; t < time; t++){
+        for (i = xs[rank]; i <= xe[rank]; i++){
+            for(j = ys[rank]; j <= ye[rank]; j++){
+                cout << x0[i][j] << " ";
+            }
+            cout << endl;
+        }
+        cout << endl;
+        computeNext(x0, x, dt1, h_x, h_y, &localDiff, rank, xs, ys, xe, ye, a);
+        for(j = ys[rank]; j <= ye[rank]; j++) {
+            for (i = xs[rank]; i <= xe[rank]; i++){
+                cout << x0[i][j] << " ";
+            }
+            cout << endl;
+        }
+        cout << endl;
+        //updateBound(x0, neighBor, comm2d, column_type, rank, xs, ys, xe, ye, ycell);
+        //MPI_Allreduce(&localDiff, &result, 1, MPI_DOUBLE, MPI_SUM, comm);
+    }
+    // Ending time 
+    time_final = MPI_Wtime();
+    // Elapsed time
+    elapsed_time = time_final - time_init;
+
+    ///////////////////////////
+    // For testing, leave it///
+    ///////////////////////////
+
+    if (true)/*(rank == 0)*/{
         j=1;
         for (i=xs[rank];i<=xe[rank];i++) {
             for (int k=0;k<ycell;k++){
@@ -231,14 +272,13 @@ int main() {
         }
     }
     MPI_Gather(xtemp, xcell*ycell , MPI_DOUBLE , xfinal, xcell*ycell, MPI_DOUBLE, 0 , comm);
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
     //cout << ys[rank] << " " << ye[rank] << endl;
     //cout << xs[rank] << " " << xe[rank] << endl;
     //cout << N_x << " " << N_x_total << " " << N_x_global << endl;
     /*on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
     "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point";*/
-
-    for (i = 0; i < 2; i++)
-        alpha[i] = new double [2];
 
     /*for(i = 0; i < N_x_total; i++) {
         for (j = 0; j < N_y_total; j++){
@@ -272,82 +312,12 @@ int main() {
             on << T_1;
         on << T_1 << endl;*/
         on.close();
+        cout << elapsed_time << endl;
+        cout << h_x << " " << h_y << endl;
     }
-
-
-    /*for (t = 0; t < time - 1; t++){
-        for (i = 0; i < N_x; i++){
-            for (j = 0; j < N_y; j++) {
-                if (j > 0 && j < N_y-1 && i == 0) {
-                    alpha[0][1] = 0;
-                    alpha[0][0] = T[i+1][j][t] - T[i][j][t];
-                    alpha[1][0] = T[i][j+1][t] - T[i][j][t];
-                    alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
-                }
-                else if (j == N_y-1 && i == 0) {
-                    alpha[0][1] = 0;
-                    alpha[1][0] = 0;
-                    alpha[0][0] = T[i+1][j][t] - T[i][j][t];
-                    alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
-                }
-                else if (j > 0 && j < N_y-1 && i == N_x-1){
-                    alpha[0][0] = 0;
-                    alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
-                    alpha[1][0] = T[i][j+1][t] - T[i][j][t];
-                    alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
-                }
-                else if (i > 0 && i < N_x-1 && j == 0) {
-                    alpha[1][1] = 0;
-                    alpha[0][0] = T[i+1][j][t] - T[i][j][t];
-                    alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
-                    alpha[1][0] = T[i][j+1][t] - T[i][j][t];
-                }
-                else if (i == N_x-1 && j == 0) {
-                    alpha[0][0] = 0;
-                    alpha[1][1] = 0;
-                    alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
-                    alpha[1][0] = T[i][j+1][t] - T[i][j][t];
-                }
-                else if (i > 0 && i < N_x-1 && j == N_y-1) {
-                    alpha[1][0] = 0;
-                    alpha[0][0] = T[i+1][j][t] - T[i][j][t];
-                    alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
-                    alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
-                }
-                else if (i == 0 && j == 0) {
-                    alpha[0][1] = 0;
-                    alpha[1][1] = 0;
-                    alpha[0][0] = T[i+1][j][t] - T[i][j][t];
-                    alpha[1][0] = T[i][j+1][t] - T[i][j][t];
-                }
-                else if (i == N_x-1 && j == N_y-1) {
-                    alpha[0][0] = 0;
-                    alpha[1][0] = 0;
-                    alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
-                    alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
-                }
-                else {
-                    alpha[0][0] = T[i+1][j][t] - T[i][j][t];
-                    alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
-                    alpha[1][0] = T[i][j+1][t] - T[i][j][t];
-                    alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
-                }
-                T[i][j][t+1] = tau * ((alpha[0][0] + alpha[0][1])/pow(h_x,2) + (alpha[1][0] + alpha[1][1])/pow(h_y,2)) + T[i][j][t];
-            }
-        }
-    }*/
     cout << "ok" << endl;
 
-    /*for (j = 0; j < N_y; j++){
-        for(i = 0; i < N_x; i++){
-            on << endl;
-            on << i << " " << j << " " << T[i][j][4500];
-        }*/
-        //on << endl;
-    //}
-
     delete[] x, x0, xtemp, xfinal, xs, ys, xe, ye;
-    delete[] alpha;
 
     MPI_Finalize();
     return 0;
