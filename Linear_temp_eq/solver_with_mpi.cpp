@@ -24,29 +24,68 @@ using namespace std;
     T[i][j][t+1] = tau * ((alpha[0][0] + alpha[0][1])/pow(h_x,2) + (alpha[1][0] + alpha[1][1])/pow(h_y,2)) + T[i][j][t];
     return T[i][j][t+1];
 }*/
-void initValues(double **x0, int N_x_total, int N_y_total, double T_1, double T_2, double h_x, double h_y){
+void InsertArr(double **x0, int ind, int N_total, int N_shift, char x){
     int i, j;
+    for (i = N_shift; i >= ind; i--)
+        for (j = 0; j < N_total; j++){
+            //x0[j][i] = x0[j][i-1];
+            if (x == 'x')
+                x0[i][j] = x0[i-1][j];
+            else if (x == 'y')
+                x0[j][i] = x0[j][i-1];
+        }
+}
+void initValues(double **x0, int N_x_total, int N_y_total, double T_1, double T_2, 
+                double h_x, double h_y, double x_domains, double y_domains, int N_x_global, int N_y_global, int N_x, int N_y){
+    int i, j, cnt;
     double T_temp;
+    double *x_index = new double[N_x_total];
+    double *y_index = new double[N_y_total];
 
-    for (i = 0; i < N_x_total; i++){
-        if (i <= h/h_x+1) T_temp = T_1;
+    for (i = 0; i < N_x_global; i++)
+        for (j = 0; j < N_y_global; j++){
+            if (i < h/h_x and j < h/h_y) x0[i][j] = T_1;
+            else x0[i][j] = T_2;
+        }
+    cnt = 0;
+    for (i = N_x/x_domains; i < N_x; i+=N_x/x_domains){
+        InsertArr(x0, i+cnt, N_y_total, cnt + N_x_global, 'x');
+        cnt += 1;
+        InsertArr(x0, i + 2 + cnt, N_y_total, cnt + N_x_global, 'x');
+        cnt += 1;
+    }
+    cnt = 0;
+    for (j = N_y/y_domains; j < N_y; j+=N_y/y_domains){
+        InsertArr(x0, j + cnt, N_x_total, cnt + N_y_global, 'y');
+        cnt += 1;
+        InsertArr(x0, j + 2 + cnt, N_x_total, cnt + N_y_global, 'y');
+        cnt += 1;
+    }
+    InsertArr(x0, 1, N_y_total, N_x_total - 2, 'x');
+    InsertArr(x0, N_x_total - 2, N_y_total, N_x_total - 1, 'x');
+
+    InsertArr(x0, 1, N_x_total, N_y_total - 2, 'y');
+    InsertArr(x0, N_y_total - 2, N_x_total, N_y_total - 1, 'y');
+
+    /*for (i = 0; i < N_x_total; i++){
+        if (i < hh_x) T_temp = T_1;
         else T_temp = T_2;
         x0[i][0] = T_temp;
         x0[i][N_y_total - 1] = T_2;
     }
     for (j = 0; j < N_y_total; j++){
-        if (j <= h/h_y+1) T_temp = T_1;
+        if (j < hh_y) T_temp = T_1;
         else T_temp = T_2;
         x0[0][j] = T_temp;
         x0[N_x_total - 1][j] = T_2;
     }
     for (i = 1; i < N_x_total - 1; i++){
         for (j = 1; j < N_y_total - 1; j++){
-            if (i <= h/h_x+1 and j <= h/h_y+1) T_temp = T_1;
+            if (i < hh_x and j < hh_y) T_temp = T_1;
             else T_temp = T_2;
             x0[i][j] = T_temp;
         }
-    }
+    }*/
 }
 void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int x_domains, int y_domains){
     int i, j;
@@ -77,7 +116,7 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int 
     }
 }
 int main() {
-    int i, j, time = 1000;
+    int i, j, time = 3, n;
     float ai, bi, ci, fi;
     //float h_x, h_y, tau, n;
     //double **alpha = new double * [2];
@@ -89,12 +128,12 @@ int main() {
     double time_init, time_final, elapsed_time;
 
     // Various parameters for dimensions
-    int N_x = 18, N_y = 18, x_domains = 2, y_domains = 3;
+    int N_x = 18, N_y = 18, x_domains = 1, y_domains = 1;
     int N_x_global, N_y_global;
     int N_x_total, N_y_total;
 
     // space and time steps
-    double dt, dt1 = 0.1, tau, h_x, h_y;
+    double dt, dt1, tau, h_x, h_y, hh_x, hh_y;
 
     // Current local square difference 
     double localDiff;
@@ -154,7 +193,7 @@ int main() {
 
     h_x = L_x/N_x_global;
     h_y = L_y/N_y_global;
-    tau = 1/(4*pow(a,2))*pow(min(h_x,h_y),2); // оптимальное время
+    tau = 1./(4.0*pow(a,2))*pow(min(h_x,h_y),2); // оптимальное время
     // критерий устойчивости: tau <= h^2/(2*p), p - число мер
     // см. Самарский, Гулин "Устойчивость разностных схем" стр. 314
     // tau = 1/4a^2 * min(h_x,h_y)^2
@@ -198,6 +237,8 @@ int main() {
     neighBor[2] = MPI_PROC_NULL;
     neighBor[3] = MPI_PROC_NULL;
 
+    // "фиктивный" отправитель/получатель. Необходимо для работы с границами.
+
     // left/west and right/east neighBors; returns the shifted source and destination ranks, given a shft direction and amount
     MPI_Cart_shift(comm2d, 0, 1, &neighBor[W], &neighBor[E]);
    // MPI_Cart_shift( MPI_Comm comm , int direction , int disp , int* rank_source , int* rank_dest);
@@ -215,12 +256,20 @@ int main() {
 
     // create column data type to communicate with East and West neighBors; creates a vector datatype
     MPI_Type_vector(xcell, 1, N_y_total, MPI_DOUBLE, &column_type);
-    
+
     // commits the datatype
     MPI_Type_commit(&column_type);
-
     // Initialize values
-    initValues(x0, N_x_total, N_y_total, T_1, T_2, h_x, h_y);
+    initValues(x0, N_x_total, N_y_total, T_1, T_2, h_x, h_y, x_domains, y_domains, N_x_global, N_y_global, N_x, N_y);
+    /*if (rank ==0) {
+        for (j = 0; j < N_y_global; j++){ 
+            for (i = 0; i < N_x_global; i++){
+                cout << x0[i][j] << " ";
+            }
+            cout << endl;
+        }
+    }*/
+
     /*double *T = new double[M * M];
     double *T_proc = new double[M * M/size];*/
 
@@ -233,23 +282,22 @@ int main() {
     time_init = MPI_Wtime();
 
     for (t = 0; t < time; t++){
-        for (i = xs[rank]; i <= xe[rank]; i++){
-            for(j = ys[rank]; j <= ye[rank]; j++){
-                cout << x0[i][j] << " ";
-            }
-            cout << endl;
+        computeNext(x0, x, tau, h_x, h_y, &localDiff, rank, xs, ys, xe, ye, a);
+        for (n = 0; n < x_domains; n++){
+            for (i = xs[n]-1; i <= xe[n]+1; i++)
+                x0[i][ys[n]-1] = x0[i][ys[n]];
+            for (i = xs[size - n - 1]-1; i <= xe[size - n - 1]+1; i++)
+                x0[i][ys[size - n - 1]+1] = x0[i][ys[size - n - 1]];
         }
-        cout << endl;
-        computeNext(x0, x, dt1, h_x, h_y, &localDiff, rank, xs, ys, xe, ye, a);
-        for(j = ys[rank]; j <= ye[rank]; j++) {
-            for (i = xs[rank]; i <= xe[rank]; i++){
-                cout << x0[i][j] << " ";
-            }
-            cout << endl;
+        for (n = 1; n <= y_domains; n++){
+            for (j = ys[x_domains * n - 1]-1; j <= ye[x_domains * n - 1]+1; j++)
+                x0[xe[x_domains * n - 1]+1][j] = x0[xe[x_domains * n - 1]][j];
+            for (j = ys[x_domains * (n - 1)]-1; j <= ye[x_domains * (n - 1)]+1; j++)
+                x0[xs[x_domains * (n - 1)]-1][j] = x0[xs[x_domains * (n - 1)]][j];
         }
-        cout << endl;
-        //updateBound(x0, neighBor, comm2d, column_type, rank, xs, ys, xe, ye, ycell);
-        //MPI_Allreduce(&localDiff, &result, 1, MPI_DOUBLE, MPI_SUM, comm);
+        updateBound(x0, neighBor, comm2d, column_type, rank, xs, ys, xe, ye, ycell);
+        //for (i = xs[rank]; i <= xe[rank]; i++){
+        //    for(j = ys[rank]; j <= ye[rank]; j++){
     }
     // Ending time 
     time_final = MPI_Wtime();
@@ -265,11 +313,12 @@ int main() {
         for (i=xs[rank];i<=xe[rank];i++) {
             for (int k=0;k<ycell;k++){
                 xtemp[(j-1)*ycell+k] = x0[i][ys[rank]+k];  // ???
-                cout << xtemp[(j-1)*ycell+k] << " ";
+                //cout << xtemp[(j-1)*ycell+k] << " ";
             }
-            cout << endl;    
+            //cout << endl;    
             j=j+1;
         }
+        //cout << endl;
     }
     MPI_Gather(xtemp, xcell*ycell , MPI_DOUBLE , xfinal, xcell*ycell, MPI_DOUBLE, 0 , comm);
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -299,12 +348,10 @@ int main() {
         on << T_1 << endl;*/
         for (i=1;i<=y_domains;i++){
             for (j=0;j<ycell;j++) {
-                //on << T_1;
                 for (int k=1;k<=x_domains;k++) {
                     for (int l=0;l<xcell;l++)
                         on << xfinal[(i-1)*x_domains*xcell*ycell+(k-1)*xcell*ycell+l*ycell+j] << " ";
                 }
-                //on << T_1 << endl;
                 on << endl;
             }
         }
@@ -312,13 +359,23 @@ int main() {
             on << T_1;
         on << T_1 << endl;*/
         on.close();
+        cout << endl;
         cout << elapsed_time << endl;
         cout << h_x << " " << h_y << endl;
     }
     cout << "ok" << endl;
 
-    delete[] x, x0, xtemp, xfinal, xs, ys, xe, ye;
-
+    delete[] x0[0];
+    delete[] x0;
+    delete[] x;
+    delete[] x[0];
+    delete[] xtemp;
+    delete[] xfinal;
+    delete[] xs;
+    delete[] ys;
+    delete[] xe;
+    delete[] ye;
+    MPI_Type_free(&column_type);
     MPI_Finalize();
     return 0;
 }
