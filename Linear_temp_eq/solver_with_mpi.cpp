@@ -68,20 +68,20 @@ void initValues(double **x0, int N_x_total, int N_y_total, double T_1, double T_
     InsertArr(x0, N_y_total - 2, N_x_total, N_y_total - 1, 'y');
 
     /*for (i = 0; i < N_x_total; i++){
-        if (i < hh_x) T_temp = T_1;
+        if (i <= h/h_x) T_temp = T_1;
         else T_temp = T_2;
         x0[i][0] = T_temp;
         x0[i][N_y_total - 1] = T_2;
     }
     for (j = 0; j < N_y_total; j++){
-        if (j < hh_y) T_temp = T_1;
+        if (j <= h/h_y) T_temp = T_1;
         else T_temp = T_2;
         x0[0][j] = T_temp;
         x0[N_x_total - 1][j] = T_2;
     }
     for (i = 1; i < N_x_total - 1; i++){
         for (j = 1; j < N_y_total - 1; j++){
-            if (i < hh_x and j < hh_y) T_temp = T_1;
+            if (i <= h/h_x and j <= h/h_y) T_temp = T_1;
             else T_temp = T_2;
             x0[i][j] = T_temp;
         }
@@ -116,7 +116,7 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int 
     }
 }
 int main() {
-    int i, j, time = 3, n;
+    int i, j, time = 50, n;
     float ai, bi, ci, fi;
     //float h_x, h_y, tau, n;
     //double **alpha = new double * [2];
@@ -128,7 +128,7 @@ int main() {
     double time_init, time_final, elapsed_time;
 
     // Various parameters for dimensions
-    int N_x = 18, N_y = 18, x_domains = 1, y_domains = 1;
+    int N_x = 18, N_y = 18, x_domains = 3, y_domains = 1;
     int N_x_global, N_y_global;
     int N_x_total, N_y_total;
 
@@ -283,18 +283,38 @@ int main() {
 
     for (t = 0; t < time; t++){
         computeNext(x0, x, tau, h_x, h_y, &localDiff, rank, xs, ys, xe, ye, a);
+        /*if (rank ==0) {
+            for (j = 0; j < N_y_total; j++){ 
+                for (i = 0; i < N_x_total; i++){
+                    cout << x0[i][j] << " ";
+                }
+                cout << endl;
+            }
+        }*/
         for (n = 0; n < x_domains; n++){
             for (i = xs[n]-1; i <= xe[n]+1; i++)
                 x0[i][ys[n]-1] = x0[i][ys[n]];
             for (i = xs[size - n - 1]-1; i <= xe[size - n - 1]+1; i++)
-                x0[i][ys[size - n - 1]+1] = x0[i][ys[size - n - 1]];
+                x0[i][ye[size - n - 1]+1] = x0[i][ye[size - n - 1]];
         }
+        // 2 5 8
+        // 1 4 7
+        // 0 3 6
         for (n = 1; n <= y_domains; n++){
             for (j = ys[x_domains * n - 1]-1; j <= ye[x_domains * n - 1]+1; j++)
                 x0[xe[x_domains * n - 1]+1][j] = x0[xe[x_domains * n - 1]][j];
             for (j = ys[x_domains * (n - 1)]-1; j <= ye[x_domains * (n - 1)]+1; j++)
                 x0[xs[x_domains * (n - 1)]-1][j] = x0[xs[x_domains * (n - 1)]][j];
         }
+        /*if (rank ==0) {
+            for (j = 0; j < N_y_total; j++){ 
+                for (i = 0; i < N_x_total; i++){
+                    cout << x0[i][j] << " ";
+                }
+                cout << endl;
+        }
+        }
+        cout << endl << endl;*/
         updateBound(x0, neighBor, comm2d, column_type, rank, xs, ys, xe, ye, ycell);
         //for (i = xs[rank]; i <= xe[rank]; i++){
         //    for(j = ys[rank]; j <= ye[rank]; j++){
@@ -336,7 +356,7 @@ int main() {
         on << endl;
     }*/
     if (rank == 0){
-        ofstream on("file_mpi.txt");
+        ofstream on("file_mpi.dat");
 
         if(!on){
             cout << "Error openning input file. \n";
