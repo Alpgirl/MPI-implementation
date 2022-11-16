@@ -116,7 +116,7 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int 
     }
 }
 int main() {
-    int i, j, time = 50, n;
+    int i, j, time = 10, n;
     float ai, bi, ci, fi;
     //float h_x, h_y, tau, n;
     //double **alpha = new double * [2];
@@ -128,7 +128,7 @@ int main() {
     double time_init, time_final, elapsed_time;
 
     // Various parameters for dimensions
-    int N_x = 18, N_y = 18, x_domains = 3, y_domains = 1;
+    int N_x = 18, N_y = 18, x_domains = 1, y_domains = 2;
     int N_x_global, N_y_global;
     int N_x_total, N_y_total;
 
@@ -280,7 +280,7 @@ int main() {
 
     /* Starting time */
     time_init = MPI_Wtime();
-
+    
     for (t = 0; t < time; t++){
         computeNext(x0, x, tau, h_x, h_y, &localDiff, rank, xs, ys, xe, ye, a);
         /*if (rank ==0) {
@@ -306,16 +306,26 @@ int main() {
             for (j = ys[x_domains * (n - 1)]-1; j <= ye[x_domains * (n - 1)]+1; j++)
                 x0[xs[x_domains * (n - 1)]-1][j] = x0[xs[x_domains * (n - 1)]][j];
         }
-        /*if (rank ==0) {
+        /*if (rank == 1) {
             for (j = 0; j < N_y_total; j++){ 
                 for (i = 0; i < N_x_total; i++){
                     cout << x0[i][j] << " ";
                 }
                 cout << endl;
         }
+        cout << endl;
+        }*/
+        if (rank == 1 and t == time - 1) {
+            for (j = ys[rank]; j <= ye[rank]; j++){
+                for (i = xs[rank]; i <= xe[rank]; i++)
+                    cout << x0[i][j] << " ";
+                cout << endl;
+            }
+            cout << endl;
         }
-        cout << endl << endl;*/
         updateBound(x0, neighBor, comm2d, column_type, rank, xs, ys, xe, ye, ycell);
+        MPI_Allreduce(&localDiff, &result, 1, MPI_DOUBLE, MPI_SUM, comm);
+        result= sqrt(result);
         //for (i = xs[rank]; i <= xe[rank]; i++){
         //    for(j = ys[rank]; j <= ye[rank]; j++){
     }

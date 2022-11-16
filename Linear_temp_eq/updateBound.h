@@ -41,16 +41,20 @@ void computeNext(double** x0, double** x, double dt, double h_x, double h_y, dou
     
     for (i = xs[rank]; i <= xe[rank]; i++){
         for(j = ys[rank]; j <= ye[rank]; j++){
-            x[i][j] = pow(a,2)*dt/pow(h_x,2) * (x0[i+1][j] - 2*x0[i][j] + x0[i-1][j]) + pow(a,2)*dt/pow(h_y,2) * (x0[i][j+1] - 2*x0[i][j] + x0[i][j-1]) 
+            //if (i == xs[rank] and j == ys[rank]+1) std::cout << x0[i][j] << " " << x0[i-1][j] << " " << x0[i][j-1] << " " << x0[i+1][j] << " " << x0[i][j+1] << std ::endl;
+            x[i][j] = pow(a,2)*dt/pow(h_x,2) * (x0[i+1][j] - 2.*x0[i][j] + x0[i-1][j]) + pow(a,2)*dt/pow(h_y,2) * (x0[i][j+1] - 2.*x0[i][j] + x0[i][j-1]) 
                 + x0[i][j];
+           // if (i == xs[rank] and j == ys[rank]+1) std::cout << x[i][j] << std :: endl;
         }
     }
     *diff = 0.0;
     for (i = xs[rank]; i <= xe[rank]; i++){
         for(j = ys[rank]; j <= ye[rank]; j++){
-            /*ldiff = x0[i][j] - x[i][j];
-            *diff += ldiff * ldiff;*/
+            ldiff = x0[i][j] - x[i][j];
+            *diff += ldiff * ldiff;
             x0[i][j] = x[i][j];
+            //if (i == xs[rank] and j == ys[rank]+1) std::cout << x0[i][j] << std :: endl;
+            
         }
     }
 }
