@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cmath>
 #include <mpi.h>
+#include <cstdlib>
 #include "updateBound.h"
 /*#define N_x  20
 #define N_y  20
@@ -44,8 +45,8 @@ void initValues(double **x0, int N_x_total, int N_y_total, double T_1, double T_
 
     for (i = 0; i < N_x_global; i++)
         for (j = 0; j < N_y_global; j++){
-            if (i < h/h_x and j < h/h_y) x0[i][j] = T_1;
-            else x0[i][j] = T_2;
+            if (i < h/h_x and j < h/h_y) x0[i][j] = /*rand()%300+1*/T_1;
+            else x0[i][j] = /*rand()%300+1*/T_2;
         }
     cnt = 0;
     for (i = N_x/x_domains; i < N_x; i+=N_x/x_domains){
@@ -116,7 +117,7 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int 
     }
 }
 int main() {
-    int i, j, time = 10, n;
+    int i, j, time = 50, n;
     float ai, bi, ci, fi;
     //float h_x, h_y, tau, n;
     //double **alpha = new double * [2];
@@ -128,7 +129,7 @@ int main() {
     double time_init, time_final, elapsed_time;
 
     // Various parameters for dimensions
-    int N_x = 18, N_y = 18, x_domains = 1, y_domains = 2;
+    int N_x = 2048, N_y = 2048, x_domains = 8, y_domains = 2;
     int N_x_global, N_y_global;
     int N_x_total, N_y_total;
 
@@ -261,13 +262,31 @@ int main() {
     MPI_Type_commit(&column_type);
     // Initialize values
     initValues(x0, N_x_total, N_y_total, T_1, T_2, h_x, h_y, x_domains, y_domains, N_x_global, N_y_global, N_x, N_y);
-    /*if (rank ==0) {
-        for (j = 0; j < N_y_global; j++){ 
-            for (i = 0; i < N_x_global; i++){
+    /*if (rank == 0) {
+        for (i = 0; i < N_x_total; i++){
+            for (j = 0; j < N_y_total; j++){
                 cout << x0[i][j] << " ";
             }
             cout << endl;
         }
+    }*/
+    /*cout << endl;
+    if (rank == 1) {
+        for (i = xs[rank]; i <= xe[rank]; i++){
+            for (j = ys[rank]; j <= ye[rank]; j++){
+                cout << x0[i][j] << " ";
+            }
+            cout << endl;
+        }
+    }*/
+    /*cout << endl;
+    if (rank == 1) {
+        for (j = ys[rank]-1; j <= ye[rank]+1; j++){
+            for (i = xs[rank]-1; i <= xe[rank]+1; i++)
+                cout << x0[i][j] << " ";
+            cout << endl;
+        }
+        cout << endl;
     }*/
 
     /*double *T = new double[M * M];
@@ -291,6 +310,11 @@ int main() {
                 cout << endl;
             }
         }*/
+       /* if (rank == 1){
+            for (i = xs[rank]; i <= )
+                cout << x0[xs[rank]][ye[rank]+1]
+        }*/
+        updateBound(x0, neighBor, comm2d, column_type, rank, xs, ys, xe, ye, ycell);
         for (n = 0; n < x_domains; n++){
             for (i = xs[n]-1; i <= xe[n]+1; i++)
                 x0[i][ys[n]-1] = x0[i][ys[n]];
@@ -306,26 +330,52 @@ int main() {
             for (j = ys[x_domains * (n - 1)]-1; j <= ye[x_domains * (n - 1)]+1; j++)
                 x0[xs[x_domains * (n - 1)]-1][j] = x0[xs[x_domains * (n - 1)]][j];
         }
-        /*if (rank == 1) {
+        /*if (rank == 1 and t == time - 1) {
             for (j = 0; j < N_y_total; j++){ 
                 for (i = 0; i < N_x_total; i++){
                     cout << x0[i][j] << " ";
                 }
                 cout << endl;
-        }
-        cout << endl;
+            }
         }*/
+        if (rank == 0 and t == time - 1) {
+            ofstream test("just_test_mpi_0.dat");
+            for (i = 0; i < N_x_total; i++){
+                for (j = 0; j < N_y_total; j++){ 
+                    test << x0[i][j] << " ";
+                }
+                test << endl;
+            }
+            test.close();
+        }
         if (rank == 1 and t == time - 1) {
+            ofstream test("just_test_mpi.dat");
+            for (i = 0; i < N_x_total; i++){
+                for (j = 0; j < N_y_total; j++){ 
+                    test << x0[i][j] << " ";
+                }
+                test << endl;
+            }
+            test.close();
+        }
+       /* if (rank == 0 and t == time - 1) {
+            for (j = 0; j < N_y_total; j++){ 
+                for (i = 0; i < N_x_total; i++){
+                    cout << x0[i][j] << " ";
+                }
+                cout << endl;
+            }
+        }*/
+        /*if (rank == 1 and t == time - 1) {
             for (j = ys[rank]; j <= ye[rank]; j++){
                 for (i = xs[rank]; i <= xe[rank]; i++)
                     cout << x0[i][j] << " ";
                 cout << endl;
             }
             cout << endl;
-        }
-        updateBound(x0, neighBor, comm2d, column_type, rank, xs, ys, xe, ye, ycell);
-        MPI_Allreduce(&localDiff, &result, 1, MPI_DOUBLE, MPI_SUM, comm);
-        result= sqrt(result);
+        }*/
+        //MPI_Allreduce(&localDiff, &result, 1, MPI_DOUBLE, MPI_SUM, comm);
+        //result= sqrt(result);
         //for (i = xs[rank]; i <= xe[rank]; i++){
         //    for(j = ys[rank]; j <= ye[rank]; j++){
     }
@@ -333,6 +383,26 @@ int main() {
     time_final = MPI_Wtime();
     // Elapsed time
     elapsed_time = time_final - time_init;
+    /*if (rank == 0) {
+            ofstream test("just_test_mpi_0.dat");
+            for (i = 0; i < N_x_total; i++){
+                for (j = 0; j < N_y_total; j++){ 
+                    test << x0[i][j] << " ";
+                }
+                test << endl;
+            }
+            test.close();
+        }
+    if (rank == 1) {
+        ofstream test("just_test_mpi.dat");
+        for (i = 0; i < N_x_total; i++){
+            for (j = 0; j < N_y_total; j++){ 
+                test << x0[i][j] << " ";
+            }
+            test << endl;
+        }
+        test.close();
+    }*/
 
     ///////////////////////////
     // For testing, leave it///
@@ -392,6 +462,8 @@ int main() {
         cout << endl;
         cout << elapsed_time << endl;
         cout << h_x << " " << h_y << endl;
+        cout << xcell << " " << ycell << endl;
+        cout << N_x_total << " " << N_y_total << endl;
     }
     cout << "ok" << endl;
 

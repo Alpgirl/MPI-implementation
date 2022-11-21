@@ -16,15 +16,15 @@ using namespace std;
 }*/
 
 int main() {
-    int a = 1, i, j, N_x = 101, N_y = 101, time = 5000, t;
+    int a = 1, i, j, N_x = 2048, N_y = 2048, time = 51, t;
     float L_x = 10.0, L_y = 20.0, T_1 = 1000.0, T_2 = 300.0, ai, bi, ci, fi;
     float h_x, h_y, tau, n, h = 5.0;
     double ***T = new double ** [(N_x)];
     double **alpha = new double * [2];
 
-    ofstream on("file.dat");
-    on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
-    "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point";
+    ofstream on("file_compare_with_mpi.dat");
+    /*on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
+    "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point";*/
 
     if(!on){
         cout << "Error openning input file. \n";
@@ -40,15 +40,15 @@ int main() {
         }
     }
 
-    h_x = L_x/(N_x - 1);
-    h_y = L_y/(N_y - 1);
-    tau = 1/(pow(h_x,-2)+pow(h_y,-2))*0.5; // оптимальное время
+    h_x = L_x/(N_x+2);
+    h_y = L_y/(N_y+2);
+    tau = 1./(4*pow(a,2))*pow(min(h_x,h_y),2); // оптимальное время
     // критерий устойчивости: tau <= h^2/(2*p), p - число мер
     // см. Самарский, Гулин "Устойчивость разностных схем" стр. 314
 
     for(i = 0; i < N_x; i++)
         for (j = 0; j < N_y; j++){
-            if (h_x * i < h && h_y * j < h)
+            if (i < h/h_x - 1 and j < h/h_y - 1)
                 T[i][j][0] = T_1;
             else
                 T[i][j][0] = T_2;
@@ -118,18 +118,18 @@ int main() {
                     alpha[1][0] = T[i][j+1][t] - T[i][j][t];
                     alpha[1][1] = - T[i][j][t] + T[i][j-1][t];
                 }
-                T[i][j][t+1] = tau * ((alpha[0][0] + alpha[0][1])/pow(h_x,2) + (alpha[1][0] + alpha[1][1])/pow(h_y,2)) + T[i][j][t];
+                T[i][j][t+1] = pow(a,2) * tau * ((alpha[0][0] + alpha[0][1])/pow(h_x,2) + (alpha[1][0] + alpha[1][1])/pow(h_y,2)) + T[i][j][t];
             }
         }
     }
     cout << "ok" << endl;
-
+    //on << endl;
     for (j = 0; j < N_y; j++){
         for(i = 0; i < N_x; i++){
-            on << endl;
-            on << i << " " << j << " " << T[i][j][4500];
+            //on << endl;
+            on << T[i][j][50] << " ";
         }
-        //on << endl;
+        on << endl;
     }
 
     delete[] T;

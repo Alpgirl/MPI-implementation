@@ -16,7 +16,7 @@ void updateBound(double** x, int neighBor[], MPI_Comm comm2d, MPI_Datatype colum
     MPI_Sendrecv(&x[xe[rank]][ys[rank]], ycell, MPI_DOUBLE, neighBor[N], flag, &x[xs[rank]-1][ys[rank]], ycell, 
                     MPI_DOUBLE, neighBor[S], flag, comm2d, &status);
     //MPI_Sendrecv( const void* sendbuf , MPI_Count sendcount , MPI_Datatype sendtype , int dest , int sendtag , void* recvbuf , 
-    //              MPI_Count recvcount , MPI_Datatype recvtype , int source , int recvtag , MPI_Comm comm , MPI_Status* status);
+     //             MPI_Count recvcount , MPI_Datatype recvtype , int source , int recvtag , MPI_Comm comm , MPI_Status* status);
 
     /* Send my boundary to South and receive from North */
     MPI_Sendrecv(&x[xs[rank]][ys[rank]], ycell, MPI_DOUBLE, neighBor[S], flag, &x[xe[rank]+1][ys[rank]], ycell, 
@@ -25,12 +25,21 @@ void updateBound(double** x, int neighBor[], MPI_Comm comm2d, MPI_Datatype colum
     /****************** East/West communication ********************/
     flag = 2;
     /* Send my boundary to East and receive from West */
-    MPI_Sendrecv(&x[xs[rank]][ye[rank]], 1, column_type, neighBor[E], flag, &x[xs[rank]][ys[rank]-1], 1, column_type, 
+    for (int i = xs[rank]-1; i <= xe[rank]+1; i++){
+        MPI_Sendrecv(&x[i][ye[rank]], 1, /*column_type*/ MPI_DOUBLE, neighBor[E], flag, &x[i][ys[rank]-1], 1, /*column_type*/MPI_DOUBLE, 
                     neighBor[W], flag, comm2d, &status);
 
     /* Send my boundary to West and receive from East */
-    MPI_Sendrecv(&x[xs[rank]][ys[rank]], 1, column_type, neighBor[W], flag, &x[xs[rank]][ye[rank]+1], 1, column_type, 
+        MPI_Sendrecv(&x[i][ys[rank]], 1, /*column_type*/MPI_DOUBLE, neighBor[W], flag, &x[i][ye[rank]+1], 1, /*column_type*/MPI_DOUBLE, 
                     neighBor[E], flag, comm2d, &status);
+    }
+    /*if (rank == 1)
+        MPI_Send(&x[xs[1]][ys[1]], 1, column_type, 0, flag, comm2d);*/
+        /*for (int i = xs[1]; i <= xe[1]; i++)
+            std::cout << x[i][ys[1]-1] << " ";
+        std::cout << std :: endl;*/
+    /*if (rank == 0)
+        MPI_Recv(&x[xs[0]][ye[0]+1], 1, column_type, 1 , flag,  comm2d , &status);*/
 }
 
 void computeNext(double** x0, double** x, double dt, double h_x, double h_y, double* diff, 
