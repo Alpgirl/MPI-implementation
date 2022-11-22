@@ -1,30 +1,19 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <chrono>
 using namespace std;
 
-/*double calc_side (double *** T, int i, int j, double **alpha, int t, int h_x, int h_y, int tau) {
-    float test, test1, test2, test3;
-    test = alpha[0][1];
-    test1 = alpha[1][1];
-    test2 = alpha[1][0];
-    test3 = alpha[0][0];
-    T[i][j][t + 1] = tau * ((alpha[0][0] * (T[i+1][j][t] - T[i][j][t]) + alpha[0][1] * (- T[i][j][t] + T[i-1][j][t]))/pow(h_x,2) + 
-    (alpha[1][0] * (T[i][j+1][t] - T[i][j][t]) + alpha[1][1] * (- T[i][j][t] + T[i][j-1][t]))/pow(h_y,2)) + T[i][j][t];
-    T[i][j][t+1] = tau * ((alpha[0][0] + alpha[0][1])/pow(h_x,2) + (alpha[1][0] + alpha[1][1])/pow(h_y,2)) + T[i][j][t];
-    return T[i][j][t+1];
-}*/
-
 int main() {
-    int a = 1, i, j, N_x = 2048, N_y = 2048, time = 51, t;
+    int a = 1, i, j, N_x = 512, N_y = 512, time = 101, t;
     float L_x = 10.0, L_y = 20.0, T_1 = 1000.0, T_2 = 300.0, ai, bi, ci, fi;
     float h_x, h_y, tau, n, h = 5.0;
     double ***T = new double ** [(N_x)];
     double **alpha = new double * [2];
 
     ofstream on("file_compare_with_mpi.dat");
-    /*on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
-    "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point";*/
+    on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
+    "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point" << endl;
 
     if(!on){
         cout << "Error openning input file. \n";
@@ -54,14 +43,9 @@ int main() {
                 T[i][j][0] = T_2;
         }
 
-    /*for (j = 0; j < N_y - 1; j++){
-        for(i = 0; i < N_x - 1; i++){
-            on << T[i][j] << ' ';
-        }
-        on << endl;
-    }*/
+    chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
-    for (t = 0; t < time - 1; t++){
+    for (t = 0; t <= time - 1; t++){
         for (i = 0; i < N_x; i++){
             for (j = 0; j < N_y; j++) {
                 if (j > 0 && j < N_y-1 && i == 0) {
@@ -122,12 +106,12 @@ int main() {
             }
         }
     }
-    cout << "ok" << endl;
+    chrono::steady_clock::time_point end = chrono::steady_clock::now();
+    cout << "Time difference = " << chrono::duration_cast<chrono::seconds>(end - begin).count() << "[s]" << endl;
     //on << endl;
-    for (j = 0; j < N_y; j++){
-        for(i = 0; i < N_x; i++){
-            //on << endl;
-            on << T[i][j][50] << " ";
+    for(i = 0; i < N_x; i++){
+        for (j = 0; j < N_y; j++){
+            on << i << " " << j << " " << T[i][j][100] << endl;
         }
         on << endl;
     }
