@@ -5,17 +5,18 @@
 using namespace std;
 
 int main() {
-    int a = 1, i, j, N_x = 512, N_y = 512, time = 101, t;
+    int a = 1, i, j, N_x = 102, N_y = 102, time = 403, t;
     float L_x = 10.0, L_y = 20.0, T_1 = 1000.0, T_2 = 300.0, ai, bi, ci, fi;
     float h_x, h_y, tau, n, h = 5.0;
     double ***T = new double ** [(N_x)];
     double **alpha = new double * [2];
 
-    ofstream on("file_compare_with_mpi.dat");
+    ofstream on("file_compare_with_mpi_vizual.dat");
     on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
     "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point" << endl;
+    ofstream on2("file_compare_with_mpi.dat");
 
-    if(!on){
+    if(!on or !on2){
         cout << "Error openning input file. \n";
         return -1;
     }
@@ -111,11 +112,17 @@ int main() {
     //on << endl;
     for(i = 0; i < N_x; i++){
         for (j = 0; j < N_y; j++){
-            on << i << " " << j << " " << T[i][j][100] << endl;
+            on << i << " " << j << " " << T[j][i][400] << endl;
         }
-        on << endl;
     }
-
+    for (j = 0; j < N_y; j++){
+        for(i = 0; i < N_x; i++){
+            on2 << T[i][j][400] << " ";
+        }
+        on2 << endl;
+    }
+    on.close();
+    on2.close();
     delete[] T;
     delete[] alpha;
     return 0;

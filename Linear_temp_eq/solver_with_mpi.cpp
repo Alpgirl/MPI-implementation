@@ -80,7 +80,7 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int 
     }
 }
 int main() {
-    int i, j, k, l, n, t, time = 100;
+    int i, j, k, l, n, t, zx = 0, zy = 0, time = 400;
 
     // diffusivity coefficient
     double a = 1.0;
@@ -92,7 +92,7 @@ int main() {
     double time_init, time_final, elapsed_time;
 
     // Various parameters for dimensions
-    int N_x = 512, N_y = 512, x_domains = 4, y_domains = 4;
+    int N_x = 102, N_y = 102, x_domains = 2, y_domains = 2;
     int N_x_global, N_y_global;
     int N_x_total, N_y_total;
 
@@ -257,11 +257,12 @@ int main() {
     //cout << N_x << " " << N_x_total << " " << N_x_global << endl;
 
     if (rank == 0){
-        ofstream on("file_mpi.dat");
+        ofstream on("file_mpi_vizual.dat");
         on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
-        "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point";
+        "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point" << endl;
+        ofstream on2("file_mpi.dat");
 
-        if(!on){
+        if(!on or !on2){
             cout << "Error openning input file. \n";
             return -1;
         }
@@ -269,14 +270,21 @@ int main() {
         for (i=1;i<=y_domains;i++){
             for (j=0;j<ycell;j++) {
                 for (k=1;k<=x_domains;k++) {
-                    for (l=0;l<xcell;l++)
-                        on << (i-1)*j << " " << (k-1)*l << " " << xfinal[(i-1)*x_domains*xcell*ycell+(k-1)*xcell*ycell+l*ycell+j] << endl;
+                    for (l=0;l<xcell;l++){
+                        on << zx << " " << zy << " " << xfinal[(i-1)*x_domains*xcell*ycell+(k-1)*xcell*ycell+l*ycell+j] << endl;
+                        on2 << xfinal[(i-1)*x_domains*xcell*ycell+(k-1)*xcell*ycell+l*ycell+j] << " ";
+                        zy++;
+                    }
                 }
-                on << endl;
+                zy = 0;
+                on2 << endl;
+                zx++;
             }
         }
         on.close();
+        on2.close();
         cout << endl;
+        cout << tau << endl;
         cout << elapsed_time << endl;
     }
 
