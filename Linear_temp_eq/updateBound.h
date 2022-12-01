@@ -34,7 +34,7 @@ void updateBound(double** x, int neighBor[], MPI_Comm comm2d, int rank,
 }
 
 void computeNext(double** x0, double** x, double dt, double h_x, double h_y, 
-    int rank, int *xs, int* ys, int* xe, int* ye, float a){
+    int rank, int *xs, int* ys, int* xe, int* ye, double a){
 
     int i, j;
     double a1, a2, a3, a4;
@@ -46,7 +46,7 @@ void computeNext(double** x0, double** x, double dt, double h_x, double h_y,
             a3 = x0[i][j+1] - x0[i][j];
             a4 = - x0[i][j] + x0[i][j-1];
             //if (i == xs[rank]+2 && j == ys[rank]+2) std::cout << x0[i+1][j] << " "  << x0[i][j] << " "<< x0[i-1][j] << " " << a1+a2<< std::endl;
-            x[i][j] = dt * pow(a,2) * ((a1+a2)/pow(h_x,2) + (a3+a4)/pow(h_y,2)) + x0[i][j];
+            x[i][j] = dt * a * ((a1+a2)/pow(h_x,2) + (a3+a4)/pow(h_y,2)) + x0[i][j];
             //if (i == xs[rank]+2 && j == ys[rank]+2) std::cout << x0[i+1][j] << " "  << x0[i][j] << std::endl;
         }
     }

@@ -10,6 +10,15 @@
 #define PI 3.14
 using namespace std;
 
+void fill_null_1d(int *x0, int N){
+    for (int i = 0; i < N; i++)
+        x0[i] = 0.0;
+}
+void fill_null_2d(double **x0, int N1, int N2){
+    for (int i = 0; i < N1; i++)
+        for(int j = 0; j < N2; j++)
+            x0[i][j] = 0.0;
+}
 void InsertArr(double **x0, int ind, int N_total, int N_shift, char x){
     int i, j;
     for (i = N_shift; i >= ind; i--)
@@ -63,8 +72,9 @@ void initValuesAnalyt(double **x0, int N_x_total, int N_y_total, double T_1, dou
         for (j = 0; j < N_y_global; j++){
             if (i == 0 or i == N_x_global - 1 or j == 0 or j == N_y_global - 1 or i == 1 or j == 1 or i == N_x_global - 2 or
                 j == N_y_global - 2) x0[i][j] = 0.0;
-            else x0[i][j] = sin(PI*(h_x*i))*sin(PI*(h_y*j));
+            else x0[i][j] = sin(PI*(h_x*(i-1)))*sin(PI*(h_y*(j-1)));
         }
+
     cnt = 0;
     for (i = N_x/x_domains; i < N_x; i+=N_x/x_domains){
         InsertArr(x0, i+cnt, N_y_total, cnt + N_x_global, 'x');
@@ -72,7 +82,7 @@ void initValuesAnalyt(double **x0, int N_x_total, int N_y_total, double T_1, dou
         InsertArr(x0, i + 2 + cnt, N_y_total, cnt + N_x_global, 'x');
         cnt += 1;
     }
-    cnt = 0;
+    /*cnt = 0;
     for (j = N_y/y_domains; j < N_y; j+=N_y/y_domains){
         InsertArr(x0, j + cnt, N_x_total, cnt + N_y_global, 'y');
         cnt += 1;
@@ -83,7 +93,7 @@ void initValuesAnalyt(double **x0, int N_x_total, int N_y_total, double T_1, dou
     InsertArr(x0, N_x_total - 2, N_y_total, N_x_total - 1, 'x');
 
     InsertArr(x0, 1, N_x_total, N_y_total - 2, 'y');
-    InsertArr(x0, N_y_total - 2, N_x_total, N_y_total - 1, 'y');
+    InsertArr(x0, N_y_total - 2, N_x_total, N_y_total - 1, 'y');*/
 }
 void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int x_domains, int y_domains){
     int i, j;
@@ -114,11 +124,11 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int 
     }
 }
 int main() {
-    int i, j, k, l, n, t, zx = 0, zy = 0, time = 460;
-    cout << setprecision(10);
+    int i, j, k, l, n, t, zx = 0, zy = 0, time = 0;
+    cout << setprecision(15);
 
     // diffusivity coefficient
-    double a = 1.0;
+    double a_2 = 0.5;
 
     // physical parameters
     double T_1 = 1000.0, T_2 = 300.0;
@@ -127,7 +137,7 @@ int main() {
     double time_init, time_final, elapsed_time;
 
     // Various parameters for dimensions
-    int N_x = 100, N_y = 100, x_domains = 1, y_domains = 1;
+    int N_x = 4, N_y = 4, x_domains = 2, y_domains = 1;
     int N_x_global, N_y_global;
     int N_x_total, N_y_total;
 
@@ -157,9 +167,9 @@ int main() {
     N_x_global = N_x + 2;
     N_y_global = N_y + 2;
 
-    h_x = L_x/(N_x_global-1);
-    h_y = L_y/(N_y_global-1);
-    tau = 1./(4.0*pow(a,2))*pow(min(h_x,h_y),2); // оптимальное время
+    h_x = L_x/(N_x_global-3);
+    h_y = L_y/(N_y_global-3);
+    tau = 1./4.0*pow(min(h_x,h_y),2)/a_2; // оптимальное время
     // критерий устойчивости: tau <= h^2/(2*p), p - число мер
     // см. Самарский, Гулин "Устойчивость разностных схем" стр. 314
     // tau = 1/4a^2 * min(h_x,h_y)^2
@@ -182,6 +192,14 @@ int main() {
     int *xe = new int[size];
     int *ys = new int[size];
     int *ye = new int[size];
+
+    fill_null_1d(xs, size);
+    fill_null_1d(xe, size);
+    fill_null_1d(ys, size);
+    fill_null_1d(ye, size);
+    //fill_null_1d(xfinal, N_x*N_y);
+    fill_null_2d(x0, N_x_total, N_y_total);
+    fill_null_2d(x, N_x_total, N_y_total);
 
     // create 2D cartesion grid
     periods[0] = 0;
@@ -221,7 +239,15 @@ int main() {
     ProcessToMap(xs, ys, xe, ye, xcell, ycell, x_domains, y_domains);
 
     // initialize values
-    initValues(x0, N_x_total, N_y_total, T_1, T_2, h_x, h_y, x_domains, y_domains, N_x_global, N_y_global, N_x, N_y);
+    initValuesAnalyt(x0, N_x_total, N_y_total, T_1, T_2, h_x, h_y, x_domains, y_domains, N_x_global, N_y_global, N_x, N_y);
+    if (rank == 0) {
+        for (i = 0; i < N_x_total; i++){
+            for (j = 0; j < N_y_total; j++){
+                cout << x0[i][j] << " ";
+            }
+            cout << endl;
+        }
+    }
 
     updateBound(x0, neighBor, comm2d, rank, xs, ys, xe, ye, ycell);
 
@@ -230,7 +256,7 @@ int main() {
     
     for (t = 0; t < time; t++){
         // solver
-        computeNext(x0, x, tau, h_x, h_y, rank, xs, ys, xe, ye, a);
+        computeNext(x0, x, tau, h_x, h_y, rank, xs, ys, xe, ye, a_2);
 
         // communication between processes
         updateBound(x0, neighBor, comm2d, rank, xs, ys, xe, ye, ycell);
@@ -238,15 +264,15 @@ int main() {
         // update external boundaries of subdomains
         for (n = 0; n < x_domains; n++){
             for (i = xs[n]-1; i <= xe[n]+1; i++)
-                x0[i][ys[n]-1] = x0[i][ys[n]];
+                x0[i][ys[n]-1] = x0[i][ys[n]] = 0.0;
             for (i = xs[size - n - 1]-1; i <= xe[size - n - 1]+1; i++)
-                x0[i][ye[size - n - 1]+1] = x0[i][ye[size - n - 1]];
+                x0[i][ye[size - n - 1]+1] = x0[i][ye[size - n - 1]] = 0.0;
         }
         for (n = 1; n <= y_domains; n++){
             for (j = ys[x_domains * n - 1]-1; j <= ye[x_domains * n - 1]+1; j++)
-                x0[xe[x_domains * n - 1]+1][j] = x0[xe[x_domains * n - 1]][j];
+                x0[xe[x_domains * n - 1]+1][j] = x0[xe[x_domains * n - 1]][j] = 0.0;
             for (j = ys[x_domains * (n - 1)]-1; j <= ye[x_domains * (n - 1)]+1; j++)
-                x0[xs[x_domains * (n - 1)]-1][j] = x0[xs[x_domains * (n - 1)]][j];
+                x0[xs[x_domains * (n - 1)]-1][j] = x0[xs[x_domains * (n - 1)]][j] = 0.0;
         }
         // printing for testing working process of each process
         if (rank == 0 and t == time - 1) {
@@ -273,6 +299,32 @@ int main() {
 
     // Ending time 
     time_final = MPI_Wtime();
+    if (rank == 0) {
+            ofstream test("just_test_mpi_0.dat");
+            /*for (i = 0; i < N_x_total; i++){
+                for (j = 0; j < N_y_total; j++){ 
+                    test << x0[i][j] << " ";
+                }
+                test << endl;
+            }*/
+            for (i = xs[rank]; i<=xe[rank];i++){
+                for(j=ys[rank];j<=ye[rank];j++){
+                    test << x0[i][j] << " ";
+                }
+                test << endl;
+            }
+            test.close();
+        }
+        if (rank == 1) {
+            ofstream test("just_test_mpi.dat");
+            for (i = 0; i < N_x_total; i++){
+                for (j = 0; j < N_y_total; j++){ 
+                    test << x0[i][j] << " ";
+                }
+                test << endl;
+            }
+            test.close();
+        }
 
     // Elapsed time
     elapsed_time = time_final - time_init;
@@ -293,8 +345,8 @@ int main() {
 
     if (rank == 0){
         ofstream on("file_mpi_vizual_analyt.dat");
-        on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
-        "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point" << endl;
+        on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"x\", \"T\"" << endl <<
+        "ZONE T = \"Numerical\", I = " << N_x /*<< ", J = " << N_y */<< ", F = Point" << endl;
         ofstream on2("file_mpi_analyt.dat");
 
         if(!on or !on2){
@@ -306,7 +358,8 @@ int main() {
             for (j=0;j<ycell;j++) {
                 for (k=1;k<=x_domains;k++) {
                     for (l=0;l<xcell;l++){
-                        on << zx << " " << zy << " " << xfinal[(i-1)*x_domains*xcell*ycell+(k-1)*xcell*ycell+l*ycell+j] << endl;
+                        if (zx == 10)
+                            on << /*zx << " " <<*/ zy << " " << xfinal[(i-1)*x_domains*xcell*ycell+(k-1)*xcell*ycell+l*ycell+j] << endl;
                         on2 << xfinal[(i-1)*x_domains*xcell*ycell+(k-1)*xcell*ycell+l*ycell+j] << " ";
                         zy++;
                     }
