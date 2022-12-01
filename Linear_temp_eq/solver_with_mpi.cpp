@@ -4,9 +4,10 @@
 #include <mpi.h>
 #include <cstdlib>
 #include "updateBound.h"
-#define h  5.0
+#define h  7.0
 #define L_x  10.0
 #define L_y  20.0
+#define PI 3.14
 using namespace std;
 
 void InsertArr(double **x0, int ind, int N_total, int N_shift, char x){
@@ -30,6 +31,39 @@ void initValues(double **x0, int N_x_total, int N_y_total, double T_1, double T_
         for (j = 0; j < N_y_global; j++){
             if (i < h/h_x and j < h/h_y) x0[i][j] = T_1;
             else x0[i][j] = T_2;
+        }
+    cnt = 0;
+    for (i = N_x/x_domains; i < N_x; i+=N_x/x_domains){
+        InsertArr(x0, i+cnt, N_y_total, cnt + N_x_global, 'x');
+        cnt += 1;
+        InsertArr(x0, i + 2 + cnt, N_y_total, cnt + N_x_global, 'x');
+        cnt += 1;
+    }
+    cnt = 0;
+    for (j = N_y/y_domains; j < N_y; j+=N_y/y_domains){
+        InsertArr(x0, j + cnt, N_x_total, cnt + N_y_global, 'y');
+        cnt += 1;
+        InsertArr(x0, j + 2 + cnt, N_x_total, cnt + N_y_global, 'y');
+        cnt += 1;
+    }
+    InsertArr(x0, 1, N_y_total, N_x_total - 2, 'x');
+    InsertArr(x0, N_x_total - 2, N_y_total, N_x_total - 1, 'x');
+
+    InsertArr(x0, 1, N_x_total, N_y_total - 2, 'y');
+    InsertArr(x0, N_y_total - 2, N_x_total, N_y_total - 1, 'y');
+}
+void initValuesAnalyt(double **x0, int N_x_total, int N_y_total, double T_1, double T_2, 
+                double h_x, double h_y, double x_domains, double y_domains, int N_x_global, int N_y_global, int N_x, int N_y){
+    int i, j, cnt;
+    double T_temp;
+    double *x_index = new double[N_x_total];
+    double *y_index = new double[N_y_total];
+
+    for (i = 0; i < N_x_global; i++)
+        for (j = 0; j < N_y_global; j++){
+            if (i == 0 or i == N_x_global - 1 or j == 0 or j == N_y_global - 1 or i == 1 or j == 1 or i == N_x_global - 2 or
+                j == N_y_global - 2) x0[i][j] = 0.0;
+            else x0[i][j] = sin(PI*(h_x*i))*sin(PI*(h_y*j));
         }
     cnt = 0;
     for (i = N_x/x_domains; i < N_x; i+=N_x/x_domains){
@@ -80,7 +114,8 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int 
     }
 }
 int main() {
-    int i, j, k, l, n, t, zx = 0, zy = 0, time = 400;
+    int i, j, k, l, n, t, zx = 0, zy = 0, time = 460;
+    cout << setprecision(10);
 
     // diffusivity coefficient
     double a = 1.0;
@@ -92,7 +127,7 @@ int main() {
     double time_init, time_final, elapsed_time;
 
     // Various parameters for dimensions
-    int N_x = 102, N_y = 102, x_domains = 2, y_domains = 2;
+    int N_x = 100, N_y = 100, x_domains = 1, y_domains = 1;
     int N_x_global, N_y_global;
     int N_x_total, N_y_total;
 
@@ -122,8 +157,8 @@ int main() {
     N_x_global = N_x + 2;
     N_y_global = N_y + 2;
 
-    h_x = L_x/N_x_global;
-    h_y = L_y/N_y_global;
+    h_x = L_x/(N_x_global-1);
+    h_y = L_y/(N_y_global-1);
     tau = 1./(4.0*pow(a,2))*pow(min(h_x,h_y),2); // оптимальное время
     // критерий устойчивости: tau <= h^2/(2*p), p - число мер
     // см. Самарский, Гулин "Устойчивость разностных схем" стр. 314
@@ -257,10 +292,10 @@ int main() {
     //cout << N_x << " " << N_x_total << " " << N_x_global << endl;
 
     if (rank == 0){
-        ofstream on("file_mpi_vizual.dat");
+        ofstream on("file_mpi_vizual_analyt.dat");
         on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"y\", \"x\", \"T\"" << endl <<
         "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point" << endl;
-        ofstream on2("file_mpi.dat");
+        ofstream on2("file_mpi_analyt.dat");
 
         if(!on or !on2){
             cout << "Error openning input file. \n";
@@ -286,6 +321,7 @@ int main() {
         cout << endl;
         cout << tau << endl;
         cout << elapsed_time << endl;
+        cout << h_x << " " << h_y << " " << tau << endl;
     }
 
     delete[] x0[0];
