@@ -2,14 +2,15 @@
 #include <fstream>
 #include <cmath>
 #include <filesystem>
+#include <chrono>
 #define PI 3.14
 using namespace std;
 
 int main() {
-    int i, j, N_x = 4, N_y = 4, time = 1, t, t_c = 0, z;
+    int i, j, N_x = 1000, N_y = 1000, time = 101, t, t_c = 100, z;
     cout << setprecision(15);
 
-    double L_x = 10.0, L_y = 20.0, T_1 = 1000.0, T_2 = 300.0, ai, bi, ci, fi;
+    double L_x = 1.0, L_y = 1.0, T_1 = 1000.0, T_2 = 300.0, ai, bi, ci, fi;
     double h_x, h_y, tau, n, h = 7.0, coef_time, a_2 = 0.5;
     double test, test1, test2;
     double ***T = new double ** [(N_x)];
@@ -17,10 +18,12 @@ int main() {
     double **T_exact = new double * [N_x];
 
     ofstream on_exact_1("file_analytical_compare_mpi_exact.dat");
+    //ofstream on_exact_1("file_exact_y=10_t=0.05.dat");
     on_exact_1 << "TITLE = \"Analytic sol\"" << endl << "VARIABLES = \"x\", \"T\"" << endl <<
     "ZONE T = \"Numerical\", I = " << N_x << ", F = Point" << endl;
 
     ofstream on_exact_2("file_analytical_compare_mpi_calc.dat");
+    //ofstream on_exact_2("file_num_y=10_t=0.05.dat");
     /*on_exact_2 << "TITLE = \"Analytic sol\"" << endl << "VARIABLES = \"x\", \"T\"" << endl <<
     "ZONE T = \"Numerical\", I = " << N_x << ", F = Point" << endl;*/
 
@@ -62,7 +65,7 @@ int main() {
     for (i = 0; i < N_x; i++)
         for(j = 0; j < N_y; j++){
             if(i == 0 or i == N_x - 1 or j == 0 or j == N_y - 1) T[i][j][0] = 0;
-            else {T[i][j][0] = sin(PI*(h_x*i))*sin(PI*(h_y*j)); /*cout << h_x << " " << i << " " << j << endl;*/}
+            else T[i][j][0] = sin(PI*(h_x*i))*sin(PI*(h_y*j));
         }
     // Аналитическое решение
     coef_time = exp(-pow(PI,2)*t_c*tau);
@@ -72,7 +75,7 @@ int main() {
             else T_exact[i][j] = coef_time * sin(PI*(h_x*i))*sin(PI*(h_y*j));
         }
     }
-
+    chrono::steady_clock::time_point begin = chrono::steady_clock::now();
     for (t = 0; t < time - 1; t++){
         for (i = 0; i < N_x; i++){
             for (j = 0; j < N_y; j++) {
@@ -103,8 +106,8 @@ int main() {
                         alpha[1][0] = T[i][j+1][t] - T[i][j][t];
                     }
                     else if (i == N_x-1 && j == 0) {
-                        alpha[0][0] = 0;
-                        alpha[1][1] = 0;
+                        alpha[0][0] = 0.0;
+                        alpha[1][1] = 0.0;
                         alpha[0][1] = - T[i][j][t] + T[i-1][j][t];
                         alpha[1][0] = T[i][j+1][t] - T[i][j][t];
                     }
@@ -137,13 +140,13 @@ int main() {
             }
         }
     }
-    cout << "ok" << endl;
-    cout << h_x << " " << h_y << " " << tau << endl;
+    chrono::steady_clock::time_point end = chrono::steady_clock::now();
+    cout << "Time difference = " << chrono::duration_cast<chrono::seconds>(end - begin).count() << "[s]" << endl;
 
     for (j = 0; j < N_y; j++){
         for (i = 0; i < N_x; i++){
             //on_exact_1 << endl;
-            //on_exact_1 << i << " " << T_exact[i][10] << endl;// << " ";  /*T[i][j][t_c] << " ";*/
+            //on_exact_1 << i << " " << T_exact[i][29] << endl;// << " ";  /*T[i][j][t_c] << " ";*/
             on_exact_2 <</* i << " " <<*/ T[i][j][t_c] << " ";
         }
         //on_exact_1 << endl;

@@ -30,7 +30,7 @@ bool tokenize(string s1, string s2, string del = " ")
 
 int main() {
     //ifstream analit("file_compare_with_mpi.dat");
-    ifstream analit("file_analytical_compare_mpi.dat");
+    ifstream analit("file_analytical_compare_mpi_calc.dat");
     //ifstream num("file_mpi.dat");
     ifstream num("file_mpi_analyt.dat");
     string line_an, line_num, del = " ";

@@ -4,9 +4,10 @@
 #include <mpi.h>
 #include <cstdlib>
 #include "updateBound.h"
+#include <iomanip>
 #define h  7.0
-#define L_x  10.0
-#define L_y  20.0
+#define L_x  1.0
+#define L_y  1.0
 #define PI 3.14
 using namespace std;
 
@@ -14,11 +15,13 @@ void fill_null_1d(int *x0, int N){
     for (int i = 0; i < N; i++)
         x0[i] = 0.0;
 }
+
 void fill_null_2d(double **x0, int N1, int N2){
     for (int i = 0; i < N1; i++)
         for(int j = 0; j < N2; j++)
             x0[i][j] = 0.0;
 }
+
 void InsertArr(double **x0, int ind, int N_total, int N_shift, char x){
     int i, j;
     for (i = N_shift; i >= ind; i--)
@@ -29,6 +32,7 @@ void InsertArr(double **x0, int ind, int N_total, int N_shift, char x){
                 x0[j][i] = x0[j][i-1];
         }
 }
+
 void initValues(double **x0, int N_x_total, int N_y_total, double T_1, double T_2, 
                 double h_x, double h_y, double x_domains, double y_domains, int N_x_global, int N_y_global, int N_x, int N_y){
     int i, j, cnt;
@@ -61,6 +65,7 @@ void initValues(double **x0, int N_x_total, int N_y_total, double T_1, double T_
     InsertArr(x0, 1, N_x_total, N_y_total - 2, 'y');
     InsertArr(x0, N_y_total - 2, N_x_total, N_y_total - 1, 'y');
 }
+
 void initValuesAnalyt(double **x0, int N_x_total, int N_y_total, double T_1, double T_2, 
                 double h_x, double h_y, double x_domains, double y_domains, int N_x_global, int N_y_global, int N_x, int N_y){
     int i, j, cnt;
@@ -77,14 +82,14 @@ void initValuesAnalyt(double **x0, int N_x_total, int N_y_total, double T_1, dou
 
     cnt = 0;
     for (i = N_x/x_domains; i < N_x; i+=N_x/x_domains){
-        InsertArr(x0, i+cnt, N_y_total, cnt + N_x_global, 'x');
+        InsertArr(x0, i+cnt+1, N_y_total, cnt + N_x_global, 'x');
         cnt += 1;
         InsertArr(x0, i + 2 + cnt, N_y_total, cnt + N_x_global, 'x');
         cnt += 1;
     }
-    /*cnt = 0;
+    cnt = 0;
     for (j = N_y/y_domains; j < N_y; j+=N_y/y_domains){
-        InsertArr(x0, j + cnt, N_x_total, cnt + N_y_global, 'y');
+        InsertArr(x0, j+cnt+1, N_x_total, cnt + N_y_global, 'y');
         cnt += 1;
         InsertArr(x0, j + 2 + cnt, N_x_total, cnt + N_y_global, 'y');
         cnt += 1;
@@ -93,8 +98,9 @@ void initValuesAnalyt(double **x0, int N_x_total, int N_y_total, double T_1, dou
     InsertArr(x0, N_x_total - 2, N_y_total, N_x_total - 1, 'x');
 
     InsertArr(x0, 1, N_x_total, N_y_total - 2, 'y');
-    InsertArr(x0, N_y_total - 2, N_x_total, N_y_total - 1, 'y');*/
+    InsertArr(x0, N_y_total - 2, N_x_total, N_y_total - 1, 'y');
 }
+
 void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int x_domains, int y_domains){
     int i, j;
     // computation of starting ys, ye on (Ox) standard axis for the first column of global domain
@@ -123,8 +129,9 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int 
         }
     }
 }
+
 int main() {
-    int i, j, k, l, n, t, zx = 0, zy = 0, time = 0;
+    int i, j, k, l, n, t, zx = 0, zy = 0, time = 100;
     cout << setprecision(15);
 
     // diffusivity coefficient
@@ -137,7 +144,7 @@ int main() {
     double time_init, time_final, elapsed_time;
 
     // Various parameters for dimensions
-    int N_x = 4, N_y = 4, x_domains = 2, y_domains = 1;
+    int N_x = 1000, N_y = 1000, x_domains = 4, y_domains = 4;
     int N_x_global, N_y_global;
     int N_x_total, N_y_total;
 
@@ -197,7 +204,6 @@ int main() {
     fill_null_1d(xe, size);
     fill_null_1d(ys, size);
     fill_null_1d(ye, size);
-    //fill_null_1d(xfinal, N_x*N_y);
     fill_null_2d(x0, N_x_total, N_y_total);
     fill_null_2d(x, N_x_total, N_y_total);
 
@@ -240,14 +246,6 @@ int main() {
 
     // initialize values
     initValuesAnalyt(x0, N_x_total, N_y_total, T_1, T_2, h_x, h_y, x_domains, y_domains, N_x_global, N_y_global, N_x, N_y);
-    if (rank == 0) {
-        for (i = 0; i < N_x_total; i++){
-            for (j = 0; j < N_y_total; j++){
-                cout << x0[i][j] << " ";
-            }
-            cout << endl;
-        }
-    }
 
     updateBound(x0, neighBor, comm2d, rank, xs, ys, xe, ye, ycell);
 
@@ -299,32 +297,6 @@ int main() {
 
     // Ending time 
     time_final = MPI_Wtime();
-    if (rank == 0) {
-            ofstream test("just_test_mpi_0.dat");
-            /*for (i = 0; i < N_x_total; i++){
-                for (j = 0; j < N_y_total; j++){ 
-                    test << x0[i][j] << " ";
-                }
-                test << endl;
-            }*/
-            for (i = xs[rank]; i<=xe[rank];i++){
-                for(j=ys[rank];j<=ye[rank];j++){
-                    test << x0[i][j] << " ";
-                }
-                test << endl;
-            }
-            test.close();
-        }
-        if (rank == 1) {
-            ofstream test("just_test_mpi.dat");
-            for (i = 0; i < N_x_total; i++){
-                for (j = 0; j < N_y_total; j++){ 
-                    test << x0[i][j] << " ";
-                }
-                test << endl;
-            }
-            test.close();
-        }
 
     // Elapsed time
     elapsed_time = time_final - time_init;
@@ -339,14 +311,10 @@ int main() {
 
     MPI_Gather(xtemp, xcell*ycell , MPI_DOUBLE , xfinal, xcell*ycell, MPI_DOUBLE, 0 , comm);
 
-    //cout << ys[rank] << " " << ye[rank] << endl;
-    //cout << xs[rank] << " " << xe[rank] << endl;
-    //cout << N_x << " " << N_x_total << " " << N_x_global << endl;
-
     if (rank == 0){
-        ofstream on("file_mpi_vizual_analyt.dat");
-        on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"x\", \"T\"" << endl <<
-        "ZONE T = \"Numerical\", I = " << N_x /*<< ", J = " << N_y */<< ", F = Point" << endl;
+        ofstream on("file_mpi_vizual_analyt_2D_t0.25.dat");
+        on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"x\", \"y\", \"T\"" << endl <<
+        "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point" << endl;
         ofstream on2("file_mpi_analyt.dat");
 
         if(!on or !on2){
@@ -358,8 +326,8 @@ int main() {
             for (j=0;j<ycell;j++) {
                 for (k=1;k<=x_domains;k++) {
                     for (l=0;l<xcell;l++){
-                        if (zx == 10)
-                            on << /*zx << " " <<*/ zy << " " << xfinal[(i-1)*x_domains*xcell*ycell+(k-1)*xcell*ycell+l*ycell+j] << endl;
+                        //if (zx == 29)
+                        on << zx << " " << zy << " " << xfinal[(i-1)*x_domains*xcell*ycell+(k-1)*xcell*ycell+l*ycell+j] << endl;
                         on2 << xfinal[(i-1)*x_domains*xcell*ycell+(k-1)*xcell*ycell+l*ycell+j] << " ";
                         zy++;
                     }
@@ -373,7 +341,7 @@ int main() {
         on2.close();
         cout << endl;
         cout << tau << endl;
-        cout << elapsed_time << endl;
+        cout << "Elapsed time: " << elapsed_time << endl;
         cout << h_x << " " << h_y << " " << tau << endl;
     }
 
