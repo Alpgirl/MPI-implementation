@@ -1,0 +1,3 @@
+TITLE = "Analytic sol"
+VARIABLES = "x", "T"
+ZONE T = "Numerical", I = 1000, F = Point

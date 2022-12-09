@@ -1,0 +1,35 @@
+Структура папки Linear_temp_eq
+
+Файлы расчетного кода:
+solver_with_mpi.cpp - решатель параллельной версии
+updateBound.h - описание функций решателя параллельной версии
+solvet_analytical_2D.cpp - решатель линейной версии
+
+Тесты:
+diff_mpi_an.cpp - сравнение файлов вывода линейного и параллельного кода (success)
+test_code/test_insertArr.cpp - тест вставки строки/столбца в двумерный массив (success)
+test_code/test_mpi_sendrecv.cpp - тест работы коммуникации между процессами (success)
+test_code/test_path.cpp - тест получения пути к файлу (fail)
+test_code/Test_solver_1d_y - тесты разностной схемы в экселе
+Results for mpi speed up - тест времени расчета на кластере МИФИ
+
+Файлы вывода точек:
+file_analytical_compare_mpi_calc.dat - 2D распределение для численной линейной версии кода
+file_analytical_compare_mpi_exact.dat - 2D распределение для аналитической линейной версии кода с шапкой для tecplot
+file_mpi_analyt.dat - 2D распределение для численной параллельной версии кода
+file_mpi_vizual.dat - 2D распределение для численной параллельной версии кода с шапкой для tecplot
+
+Странный файл:
+file_exact.dat - НЕ УДАЛЯТЬ! Привязан к визуализации TECPLOT for report/Compare with analytical_2D_diftimes.lay
+
+Визуализация в Tecplot:
+TECPLOT for report/Compare with analytical_2D_diftimes.lay - сравнение аналитической и параллельной версий кода для разных моментов времени фиксированно по y (исходники check 2D solution/)
+TECPLOT for report/Compare with analytical_2D.lay - сравнение аналитической и параллельной версий кода для одного момента времени и разных срезов по пространству фиксированно по y (исходники check 2D solution/)
+TECPLOT for report/Compare with analytical_x=0.lay - сравнение аналитической и численной версий кода по оси (0,y) (исходники check 1D solution/)
+TECPLOT for report/Compare with analytical_y=0.lay - сравнение аналитической и численной версий кода по оси (x,0) (исходники check 1D solution/)
+TECPLOT for report/Grid convergence test.lay - тест на сеточную сходимость,численный линейный код + аналитическое решение (исходники Grid convergence/)
+TECPLOT for report/MPI_analytical test/MPI_analyt_2D_t0.005.lay - визуализация расчета параллельной версии кода для фиксированного времени (исходники TECPLOT for report/MPI_analytical test/)
+TECPLOT for report/MPI_analytical test/MPI_analyt_2D_t0.25.lay - визуализация расчета параллельной версии кода для фиксированного времени (исходники TECPLOT for report/MPI_analytical test/)
+TECPLOT for report/MPI_analytical test/MPI_analyt_test.lay - сравнение аналитического решения и параллельной версии кода (исходники TECPLOT for report/MPI_analytical test/)
+
+
