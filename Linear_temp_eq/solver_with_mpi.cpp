@@ -1,14 +1,17 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
-#include <mpi.h>
 #include <cstdlib>
-#include "updateBound.h"
 #include <iomanip>
+
+#include <mpi.h>
+#include "updateBound.h"
+
 #define h  7.0
 #define L_x  1.0
 #define L_y  1.0
 #define PI 3.14
+
 using namespace std;
 
 void fill_null_1d(int *x0, int N){
@@ -16,11 +19,15 @@ void fill_null_1d(int *x0, int N){
         x0[i] = 0.0;
 }
 
+
+
 void fill_null_2d(double **x0, int N1, int N2){
     for (int i = 0; i < N1; i++)
         for(int j = 0; j < N2; j++)
             x0[i][j] = 0.0;
 }
+
+
 
 void InsertArr(double **x0, int ind, int N_total, int N_shift, char x){
     int i, j;
@@ -32,6 +39,8 @@ void InsertArr(double **x0, int ind, int N_total, int N_shift, char x){
                 x0[j][i] = x0[j][i-1];
         }
 }
+
+
 
 void initValues(double **x0, int N_x_total, int N_y_total, double T_1, double T_2, 
                 double h_x, double h_y, double x_domains, double y_domains, int N_x_global, int N_y_global, int N_x, int N_y){
@@ -65,6 +74,8 @@ void initValues(double **x0, int N_x_total, int N_y_total, double T_1, double T_
     InsertArr(x0, 1, N_x_total, N_y_total - 2, 'y');
     InsertArr(x0, N_y_total - 2, N_x_total, N_y_total - 1, 'y');
 }
+
+
 
 void initValuesAnalyt(double **x0, int N_x_total, int N_y_total, double T_1, double T_2, 
                 double h_x, double h_y, double x_domains, double y_domains, int N_x_global, int N_y_global, int N_x, int N_y){
@@ -101,6 +112,8 @@ void initValuesAnalyt(double **x0, int N_x_total, int N_y_total, double T_1, dou
     InsertArr(x0, N_y_total - 2, N_x_total, N_y_total - 1, 'y');
 }
 
+
+
 void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int x_domains, int y_domains){
     int i, j;
     // computation of starting ys, ye on (Ox) standard axis for the first column of global domain
@@ -129,6 +142,8 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int 
         }
     }
 }
+
+
 
 int main() {
     int i, j, k, l, n, t, zx = 0, zy = 0, time = 100;
@@ -272,27 +287,6 @@ int main() {
             for (j = ys[x_domains * (n - 1)]-1; j <= ye[x_domains * (n - 1)]+1; j++)
                 x0[xs[x_domains * (n - 1)]-1][j] = x0[xs[x_domains * (n - 1)]][j] = 0.0;
         }
-        // printing for testing working process of each process
-        if (rank == 0 and t == time - 1) {
-            ofstream test("just_test_mpi_0.dat");
-            for (i = 0; i < N_x_total; i++){
-                for (j = 0; j < N_y_total; j++){ 
-                    test << x0[i][j] << " ";
-                }
-                test << endl;
-            }
-            test.close();
-        }
-        if (rank == 1 and t == time - 1) {
-            ofstream test("just_test_mpi.dat");
-            for (i = 0; i < N_x_total; i++){
-                for (j = 0; j < N_y_total; j++){ 
-                    test << x0[i][j] << " ";
-                }
-                test << endl;
-            }
-            test.close();
-        }
     }
 
     // Ending time 
@@ -312,7 +306,7 @@ int main() {
     MPI_Gather(xtemp, xcell*ycell , MPI_DOUBLE , xfinal, xcell*ycell, MPI_DOUBLE, 0 , comm);
 
     if (rank == 0){
-        ofstream on("file_mpi_vizual_analyt_2D_t0.25.dat");
+        ofstream on("file_mpi_vizual.dat");
         on << "TITLE = \"Bivariate normal distribution density\"" << endl << "VARIABLES = \"x\", \"y\", \"T\"" << endl <<
         "ZONE T = \"Numerical\", I = " << N_x << ", J = " << N_y << ", F = Point" << endl;
         ofstream on2("file_mpi_analyt.dat");
