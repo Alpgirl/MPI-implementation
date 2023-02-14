@@ -8,8 +8,8 @@
 #include "updateBound.h"
 
 #define h  7.0
-#define L_x  1.0
-#define L_y  1.0
+#define L_x  10.0
+#define L_y  20.0
 #define PI 3.14
 
 using namespace std;
@@ -146,7 +146,7 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int xcell, int ycell, int 
 
 
 int main() {
-    int i, j, k, l, n, t, zx = 0, zy = 0, time = 100;
+    int i, j, k, l, n, t, zx = 0, zy = 0, time = 500;
     cout << setprecision(15);
 
     // diffusivity coefficient
@@ -159,7 +159,7 @@ int main() {
     double time_init, time_final, elapsed_time;
 
     // Various parameters for dimensions
-    int N_x = 1000, N_y = 1000, x_domains = 4, y_domains = 4;
+    int N_x = 500, N_y = 500, x_domains = 2, y_domains = 5;
     int N_x_global, N_y_global;
     int N_x_total, N_y_total;
 
@@ -260,7 +260,7 @@ int main() {
     ProcessToMap(xs, ys, xe, ye, xcell, ycell, x_domains, y_domains);
 
     // initialize values
-    initValuesAnalyt(x0, N_x_total, N_y_total, T_1, T_2, h_x, h_y, x_domains, y_domains, N_x_global, N_y_global, N_x, N_y);
+    initValues(x0, N_x_total, N_y_total, T_1, T_2, h_x, h_y, x_domains, y_domains, N_x_global, N_y_global, N_x, N_y);
 
     updateBound(x0, neighBor, comm2d, rank, xs, ys, xe, ye, ycell);
 
@@ -277,15 +277,15 @@ int main() {
         // update external boundaries of subdomains
         for (n = 0; n < x_domains; n++){
             for (i = xs[n]-1; i <= xe[n]+1; i++)
-                x0[i][ys[n]-1] = x0[i][ys[n]] = 0.0;
+                x0[i][ys[n]-1] = x0[i][ys[n]] /*= 0.0*/;
             for (i = xs[size - n - 1]-1; i <= xe[size - n - 1]+1; i++)
-                x0[i][ye[size - n - 1]+1] = x0[i][ye[size - n - 1]] = 0.0;
+                x0[i][ye[size - n - 1]+1] = x0[i][ye[size - n - 1]] /*= 0.0*/;
         }
         for (n = 1; n <= y_domains; n++){
             for (j = ys[x_domains * n - 1]-1; j <= ye[x_domains * n - 1]+1; j++)
-                x0[xe[x_domains * n - 1]+1][j] = x0[xe[x_domains * n - 1]][j] = 0.0;
+                x0[xe[x_domains * n - 1]+1][j] = x0[xe[x_domains * n - 1]][j] /*= 0.0*/;
             for (j = ys[x_domains * (n - 1)]-1; j <= ye[x_domains * (n - 1)]+1; j++)
-                x0[xs[x_domains * (n - 1)]-1][j] = x0[xs[x_domains * (n - 1)]][j] = 0.0;
+                x0[xs[x_domains * (n - 1)]-1][j] = x0[xs[x_domains * (n - 1)]][j] /*= 0.0*/;
         }
     }
 
@@ -338,11 +338,12 @@ int main() {
         cout << "Elapsed time: " << elapsed_time << endl;
         cout << h_x << " " << h_y << " " << tau << endl;
     }
-
-    delete[] x0[0];
+    for (i = 0; i < N_x_total; i++){
+        delete x0[i];
+        delete x[i];
+    }
     delete[] x0;
     delete[] x;
-    delete[] x[0];
     delete[] xtemp;
     delete[] xfinal;
     delete[] xs;
