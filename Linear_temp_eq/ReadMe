@@ -32,4 +32,6 @@ TECPLOT for report/MPI_analytical test/MPI_analyt_2D_t0.005.lay - визуали
 TECPLOT for report/MPI_analytical test/MPI_analyt_2D_t0.25.lay - визуализация расчета параллельной версии кода для фиксированного времени (исходники TECPLOT for report/MPI_analytical test/)
 TECPLOT for report/MPI_analytical test/MPI_analyt_test.lay - сравнение аналитического решения и параллельной версии кода (исходники TECPLOT for report/MPI_analytical test/)
 
-
+Источники:
+https://dournac.org/info/parallel_heat2d
+http://crecs.ru/ru/numlabs2/Heat.html#_Toc190739502

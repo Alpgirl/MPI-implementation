@@ -217,7 +217,7 @@ $!Page
     }
 ### Frame Number 1 ###
 $!ReadDataSet  '|LFDSFN1|'
-  InitialPlotType = Cartesian3D
+  InitialPlotType = Cartesian2D
   IncludeText = No
   IncludeGeom = No
   ResetStyle = No
@@ -239,7 +239,7 @@ $!FrameLayout
 $!ThreeDAxis 
   AspectRatioLimit = 25
   BoxAspectRatioLimit = 25
-$!PlotType  = Cartesian3D
+$!PlotType  = Cartesian2D
 $!FrameName  = 'Frame 001'
 $!GlobalTime 
   SolutionTime = 0
@@ -259,8 +259,8 @@ $!GlobalContour  1
     Show = Yes
     XYPos
       {
-      X = 99.874
-      Y = 80.433
+      X = 86.919
+      Y = 87.215
       }
     Box
       {
@@ -655,7 +655,7 @@ $!FieldMap  [1]
     {
     LightingEffect = Gouraud
     }
-$!ThreeDAxis 
+$!TwoDAxis 
   XDetail
     {
     VarNum = 1
@@ -664,48 +664,29 @@ $!ThreeDAxis
     {
     VarNum = 2
     }
-  ZDetail
-    {
-    VarNum = 3
-    }
 $!View Fit
-$!ThreeDAxis 
-  AxisMode = XYDependent
-  XYDepXToYRatio = 1
+$!TwoDAxis 
+  AxisMode = Independent
   DepXToYRatio = 1
-  DepXToZRatio = 0.00162924444444
-$!ThreeDAxis 
+  ViewportPosition
+    {
+    X1 = 13
+    Y1 = 11
+    X2 = 88
+    }
+$!TwoDAxis 
   XDetail
     {
-    RangeMin = -4.9500000000000001776
-    RangeMax = 103.95000000000000284
+    RangeMin = 0
+    RangeMax = 99
     GRSpacing = 20
-    AxisLine
-      {
-      Edge = 2
-      }
     }
-$!ThreeDAxis 
+$!TwoDAxis 
   YDetail
     {
-    RangeMin = -4.9500000000000001776
-    RangeMax = 103.95000000000000284
+    RangeMin = 0
+    RangeMax = 98.999999999999985789
     GRSpacing = 20
-    AxisLine
-      {
-      Edge = 3
-      }
-    }
-$!ThreeDAxis 
-  ZDetail
-    {
-    RangeMin = -0.0040323800000000003391
-    RangeMax = 0.084679980000000001916
-    GRSpacing = 0.02
-    AxisLine
-      {
-      Edge = 2
-      }
     }
 $!IsoSurfaceAttributes  1
   IsoSurfaceSelection = OneSpecificValue
@@ -809,6 +790,18 @@ $!SliceAttributes  1
     I = 1
     J = 1
     K = 1
+    }
+  StartPosition
+    {
+    X = 4.95
+    Y = 4.95
+    Z = 0.00403238
+    }
+  EndPosition
+    {
+    X = 94.05
+    Y = 94.05
+    Z = 0.07661522
     }
   EdgeLayer
     {
@@ -927,29 +920,6 @@ $!StreamAttributes
       }
     }
   MaxSteps = 10000
-$!GlobalThreeD 
-  AxisScaleFact
-    {
-    X = 1
-    Y = 1
-    Z = 613.7814392492771
-    }
-  RotateOrigin
-    {
-    X = 49.5
-    Y = 49.5
-    Z = 0.0403238
-    }
-  NearPlaneFraction = 0.1
-$!ThreeDView 
-  ThetaAngle = 240
-  ViewerPosition
-    {
-    X = 821.9726620185096
-    Y = 495.4872993580138
-    Z = 0.8793549953859126
-    }
-  ViewWidth = 135.237
 $!FieldLayers 
   ShowMesh = No
   ShowContour = Yes
