@@ -31,6 +31,7 @@ TECPLOT for report/Grid convergence test.lay - тест на сеточную с
 TECPLOT for report/MPI_analytical test/MPI_analyt_2D_t0.005.lay - визуализация расчета параллельной версии кода для фиксированного времени (исходники TECPLOT for report/MPI_analytical test/)
 TECPLOT for report/MPI_analytical test/MPI_analyt_2D_t0.25.lay - визуализация расчета параллельной версии кода для фиксированного времени (исходники TECPLOT for report/MPI_analytical test/)
 TECPLOT for report/MPI_analytical test/MPI_analyt_test.lay - сравнение аналитического решения и параллельной версии кода (исходники TECPLOT for report/MPI_analytical test/)
+TECPLOT for report/check 1D solution/Check_slices_x&y.lay - визуализация срезов х=0,16 м, х=0,32м, y=0,16 м, y=0,32м для задачи про стержень с разными температурами на гранях (исходники в этой же папке)
 
 Источники:
 https://dournac.org/info/parallel_heat2d
