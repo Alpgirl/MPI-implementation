@@ -11,13 +11,33 @@ void updateBound2(double** x, int N_x_global,  MPI_Comm comm, int rank,int size,
     MPI_Status status; // program read field values MPI_SOURCE and MPI_TAG to identify process
     if(size > 1){
         for (int i = xs[rank]; i <= xe[rank]; i++){
-            if(rank==0) 
+            ///////////////////////////
+            // Transfer with O(size) //
+            ///////////////////////////
+            /*if(rank==0) 
                     MPI_Sendrecv(&x[i][ye[rank]], 1, MPI_DOUBLE, rank+1, flag, &x[i][ye[rank]+1], 1, MPI_DOUBLE, rank+1, flag, comm , &status);
             else if (rank == size - 1) 
                     MPI_Sendrecv(&x[i][ys[rank]], 1, MPI_DOUBLE, rank-1, flag, &x[i][ys[rank]-1], 1, MPI_DOUBLE, rank-1, flag , comm , &status);
             else{
                 MPI_Sendrecv(&x[i][ys[rank]], 1, MPI_DOUBLE, rank-1, flag, &x[i][ys[rank]-1], 1, MPI_DOUBLE, rank-1, flag , comm , &status);
                 MPI_Sendrecv(&x[i][ye[rank]], 1, MPI_DOUBLE, rank+1, flag, &x[i][ye[rank]+1], 1, MPI_DOUBLE, rank+1, flag, comm , &status);
+            }*/
+            ////////////////////////
+            // Transfer with O(1) //
+            ////////////////////////
+            if(rank % 2 == 0){
+                if (rank < size - 1) MPI_Recv(&x[i][ye[rank]+1], 1, MPI_DOUBLE, rank+1, flag, comm, &status);
+                if (rank < size - 1) MPI_Send(&x[i][ye[rank]], 1, MPI_DOUBLE , rank+1, flag, comm);
+
+                if (rank > 0) MPI_Send(&x[i][ys[rank]], 1, MPI_DOUBLE , rank-1, flag, comm);
+                if (rank > 0) MPI_Recv(&x[i][ys[rank]-1], 1, MPI_DOUBLE, rank-1, flag, comm, &status);
+            }
+            else if (rank % 2 != 0){
+                if (rank > 0) MPI_Send(&x[i][ys[rank]], 1, MPI_DOUBLE , rank-1, flag, comm);
+                if (rank > 0) MPI_Recv(&x[i][ys[rank]-1], 1, MPI_DOUBLE, rank-1, flag, comm, &status);
+
+                if (rank < size - 1) MPI_Recv(&x[i][ye[rank]+1], 1, MPI_DOUBLE, rank+1, flag, comm, &status);
+                if (rank < size - 1) MPI_Send(&x[i][ye[rank]], 1, MPI_DOUBLE , rank+1, flag, comm);
             }
         }
     }

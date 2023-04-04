@@ -101,7 +101,7 @@ void ProcessToMap(int *xs, int *ys, int *xe, int *ye, int *dims, int size, int N
 
 int main() {
     int i, j, k, l, n, t, cnt = 0, time_step = 10000, time_to = 60;
-    double zx = 0, zy = 0;
+    double zx = 0, zy = 0, T;
     cout << setprecision(15);
 
     // diffusivity coefficient
@@ -111,7 +111,7 @@ int main() {
     double time_init, time_final, elapsed_time;
 
     // Various parameters for dimensions
-    int N_x = 10, N_y = 10, Ncell, remainCell;
+    int N_x = 150, N_y = 150, Ncell, remainCell;
     int N_x_global, N_y_global;
     int N_x_total, N_y_total;
 
@@ -279,7 +279,7 @@ int main() {
                     on1d_032x << zx<< " " << xfinal[j + k*N_x]  << endl;
                 }
                 on2 << xfinal[j + k*N_x] << " ";
-                on << h_x * (j+1) << " " << h_y * (N_y - k) << " " << xfinal[j + k*N_x] << endl;
+                on << h_x * j << " " << h_y * (N_y - k - 1) << " " << xfinal[j + k*N_x] << endl;
             }
             on2 << endl;
         }
