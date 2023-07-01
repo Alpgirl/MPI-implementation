@@ -1,2 +1,0 @@
-Result of calculating = 3.14159
-Time = 0.926375
