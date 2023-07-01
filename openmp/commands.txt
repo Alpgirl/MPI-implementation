@@ -1,0 +1,22 @@
+omp_get_thread_num()-id of each thread
+
+omp_get_num_threads()-amount of threads
+
+#pragma omp parallel shared(a) private(myid)-distribute work
+
+#pragma omp parallel firstprivate(a)-start values of local copies are equal to the same variables in master-thread
+
+////////////////////////
+// 2. Distribute work //
+///////////////////////
+
+#pragma omp for-parallelize for-loop
+
+collapse(n)-determine which amount of threads we will distribute remain calculation
+
+nowait-no wait for other threads finish
+
+
+
+
+
