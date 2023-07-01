@@ -1,0 +1,3 @@
+TECPLOT
+1. Для отображения max/min автоматически в соответсвии со значениями:
+Contour -> Details -> Set levels -> reset range
