@@ -20,8 +20,6 @@ Linear_temp_eq:
               - realised block and ribbon decompositon
               
               - realised possibility to launch on any amount of processes
-              
-MPI_tasks: different problems during university's course
 
 openmp: solving an integral using OpenMP technology 
 
